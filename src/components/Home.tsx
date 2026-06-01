@@ -476,10 +476,10 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               </h2>
               <button
                 onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
-                className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc] ml-8"
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc] ml-8"
                 title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
               >
-                <svg width="76" height="76" viewBox="1.5 1.5 21 21" fill="none" stroke="#a68958" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
+                <svg width="60" height="60" viewBox="1.5 1.5 21 21" fill="none" stroke="#a68958" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
                   <circle cx="12" cy="12" r="10" fill="#f5efe4"/>
                   <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a"/>
                   <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a"/>
