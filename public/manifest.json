@@ -3,12 +3,22 @@
   "short_name": "MSgrdrps",
   "description": "Gardrops entegreli bej ve fil dişi giyim mağazası",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f7f1e7",
   "theme_color": "#44403c",
   "orientation": "portrait-primary",
+  "categories": ["shopping", "fashion", "lifestyle"],
+  "lang": "tr-TR",
   "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
     { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/logo-admin.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/logo-admin.png", "sizes": "384x384", "type": "image/png", "purpose": "maskable" },
     { "src": "/logo-admin.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "related_applications": []
 }

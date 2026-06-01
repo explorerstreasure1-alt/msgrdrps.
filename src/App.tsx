@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StoreProvider } from "./lib/store";
+import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import Home from "./components/Home";
 import Admin from "./components/Admin";
 
@@ -13,6 +14,7 @@ export default function App() {
 
   return (
     <StoreProvider>
+      <PwaUpdatePrompt />
       {route === "admin" ? (
         <Admin onExit={() => go("home")} />
       ) : (
