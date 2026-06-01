@@ -3,7 +3,7 @@ import { useStore } from "../lib/store";
 
 export default function AccountPanel({ onClose }: { onClose: () => void }) {
   const { register, login, logout, currentUser, orders, cart } = useStore();
-  const [mode, setMode] = useState<"login" | "register">(currentUser ? "login" : "login");
+  const [mode, setMode] = useState<"login" | "register">(currentUser ? "login" : "register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,33 +26,58 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-20 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl">
-        <button onClick={onClose} className="absolute right-4 top-4 text-stone-400 hover:text-stone-700">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-10 sm:pt-20 backdrop-blur-sm">
+      <div className="relative w-full max-w-md rounded-3xl bg-[#FDFBF7] p-8 shadow-[0_20px_50px_rgba(15,15,15,0.08)] mx-4">
+        <button onClick={onClose} className="absolute right-4 top-4 text-stone-300 hover:text-stone-800 transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
 
         {!currentUser ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="font-elegant text-2xl text-stone-800">{mode === "login" ? "Giriş Yap" : "Kayıt Ol"}</h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="text-center">
+              <h2 className="font-elegant text-2xl text-stone-800">{mode === "login" ? "Giriş Yap" : "Kayıt Ol"}</h2>
+              <p className="mt-1 text-xs text-stone-400">
+                {mode === "login" ? "Hesabına giriş yap" : "Yeni hesap oluştur"}
+              </p>
+            </div>
+
             {mode === "register" && (
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Adın Soyadın" className="inp w-full" />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-stone-500">Adın Soyadın</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Adın Soyadın"
+                  className="w-full rounded-xl border border-[#E5E1DA] bg-[#F9F8F6] px-4 py-2.5 text-sm outline-none transition focus:border-[#1A1A1A]" />
+              </div>
             )}
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-posta" type="email" className="inp w-full" />
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Şifre" type="password" className="inp w-full" />
-            {error && <p className="text-xs text-red-600">{error}</p>}
-            <button type="submit" className="w-full rounded-full bg-stone-800 py-3 text-sm font-semibold text-white hover:bg-stone-700">
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500">E-posta</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-posta adresin" type="email"
+                className="w-full rounded-xl border border-[#E5E1DA] bg-[#F9F8F6] px-4 py-2.5 text-sm outline-none transition focus:border-[#1A1A1A]" />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Şifre</label>
+              <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" type="password"
+                className="w-full rounded-xl border border-[#E5E1DA] bg-[#F9F8F6] px-4 py-2.5 text-sm outline-none transition focus:border-[#1A1A1A]" />
+            </div>
+
+            {error && <p className="text-xs text-red-500">{error}</p>}
+
+            <button type="submit"
+              className="w-full rounded-xl bg-[#111111] py-3 text-sm font-semibold text-white uppercase tracking-[0.15em] transition-all duration-300 hover:bg-[#2C2623] active:scale-[0.98]">
               {mode === "login" ? "Giriş Yap" : "Kayıt Ol"}
             </button>
-            <button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }} className="w-full text-center text-xs text-stone-500 underline">
+
+            <button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              className="w-full text-center text-xs text-stone-400 hover:text-stone-600 transition-colors">
               {mode === "login" ? "Hesabın yok mu? Kayıt ol" : "Zaten hesabın var mı? Giriş yap"}
             </button>
           </form>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-elegant text-2xl text-stone-800">Hesabım</h2>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">{currentUser.name}</span>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-200">{currentUser.name}</span>
             </div>
 
             {cart.length > 0 && (
@@ -69,10 +94,10 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
               ) : (
                 <div className="mt-2 space-y-2">
                   {userOrders.map((o) => (
-                    <div key={o.id} className="rounded-xl border border-stone-200 p-3">
+                    <div key={o.id} className="rounded-xl border border-[#F1EDE9] bg-white p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-stone-700">{new Date(o.date).toLocaleDateString("tr-TR")}</span>
-                        <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold text-white " + (o.status === "pending" ? "bg-amber-500" : o.status === "paid" ? "bg-blue-500" : o.status === "shipped" ? "bg-emerald-500" : "bg-stone-500")}>
+                        <span className={"rounded px-2 py-0.5 text-[10px] font-semibold " + (o.status === "pending" ? "bg-amber-100 text-amber-700" : o.status === "paid" ? "bg-blue-100 text-blue-700" : o.status === "shipped" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-600")}>
                           {o.status === "pending" ? "Bekliyor" : o.status === "paid" ? "Ödendi" : o.status === "shipped" ? "Kargoda" : "Teslim Edildi"}
                         </span>
                       </div>
@@ -83,7 +108,8 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
               )}
             </div>
 
-            <button onClick={() => logout()} className="w-full rounded-full border border-red-200 py-2 text-xs font-medium text-red-600 hover:bg-red-50">
+            <button onClick={() => logout()}
+              className="w-full rounded-xl border border-stone-200 py-2.5 text-xs font-medium text-stone-500 hover:border-red-200 hover:text-red-600 transition-colors">
               Çıkış Yap
             </button>
           </div>
