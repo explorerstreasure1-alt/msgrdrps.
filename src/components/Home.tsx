@@ -492,13 +492,13 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               {filteredProducts.length} ürün listeleniyor
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
 
             <label className="text-xs font-semibold text-stone-500">Sırala:</label>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as typeof sort)}
-              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none"
+              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm outline-none"
             >
               <option value="default">Varsayılan</option>
               <option value="price-asc">Fiyata göre (Artan)</option>
