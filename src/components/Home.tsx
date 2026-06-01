@@ -509,7 +509,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 mt-4 flex flex-wrap items-center gap-3 border-y border-stone-200 bg-white/60 p-3 sm:mt-0" data-aos="fade-up" data-aos-delay="150">
+        <div className="mb-8 mt-4 flex flex-nowrap items-center gap-3 overflow-x-auto border-y border-stone-200 bg-white/60 p-3 sm:flex-wrap sm:overflow-visible sm:mt-0" data-aos="fade-up" data-aos-delay="150">
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
