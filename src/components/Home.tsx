@@ -16,7 +16,7 @@ type ConditionFilter = "all" | "new" | "second";
 
 function TopBar() {
   return (
-    <div className="bg-stone-800 py-2 text-center">
+    <div className="bg-stone-800 py-1.5 text-center sm:py-2">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 text-xs tracking-wide text-stone-200">
         <span className="hidden sm:inline">🚚</span>
         <span>Ücretsiz Kargo</span>
@@ -96,8 +96,8 @@ function Hero() {
       <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-200/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-stone-300/20 blur-3xl" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 py-2 lg:grid-cols-2 lg:py-16">
-        <div className="space-y-6" data-aos="fade-right">
+      <div className="mx-auto grid max-w-7xl items-center gap-4 px-4 py-2 lg:grid-cols-2 lg:py-16">
+        <div className="space-y-3 sm:space-y-6" data-aos="fade-right">
           <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em]">
             ⋆ Yeni Sezon ⋆
           </div>
@@ -122,7 +122,7 @@ function Hero() {
               Gardrops Mağazamız
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-6 pt-4">
+          <div className="flex flex-wrap items-center gap-3 pt-2 sm:gap-6 sm:pt-4">
             <div className="flex items-center gap-2 bg-white/60 rounded-full px-4 py-2 shadow-sm">
               <Stars rating={5} size={22} />
               <span className="text-base font-semibold text-stone-700">5.0</span>
@@ -202,7 +202,7 @@ function CategoriesStrip({ onPick }: { onPick: (c: string) => void }) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-1 sm:py-8">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {cats.map((cat) => (
           <button
             key={cat}
@@ -465,7 +465,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
       {/* Products */}
       <main id="urunler" className="mx-auto max-w-7xl px-4 pb-16 pt-1 sm:pt-8" data-aos="fade-up" data-aos-delay="100">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3 sm:mb-6">
+        <div className="mb-2 flex flex-wrap items-end justify-between gap-2 sm:mb-6 sm:gap-3">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-amber-700">
               Koleksiyon
