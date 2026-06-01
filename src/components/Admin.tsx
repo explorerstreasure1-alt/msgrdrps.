@@ -2316,7 +2316,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             <img
             src={logoSrc}
             alt="MS"
-            className="h-12 w-auto object-contain sm:h-50"
+            className="h-16 w-auto object-contain sm:h-60"
             />
             <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-stone-300">panel</span>
           </div>
