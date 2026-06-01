@@ -16,7 +16,7 @@ type ConditionFilter = "all" | "new" | "second";
 
 function TopBar() {
   return (
-    <div className="bg-stone-800 py-1.5 pb-2 text-center sm:py-2">
+    <div className="bg-stone-800 py-2 pb-3 text-center sm:py-2">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 text-xs tracking-wide text-stone-200">
         <span className="hidden sm:inline">🚚</span>
         <span>Ücretsiz Kargo</span>
@@ -389,7 +389,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f1e7] text-stone-800">
+    <div className="min-h-screen bg-[#f7f1e7] text-stone-800 overflow-x-hidden">
       <TopBar />
 
       {/* Header */}
@@ -442,7 +442,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         {/* Mobile search */}
-        <div className="relative block md:hidden px-4 pb-0.5">
+        <div className="relative block md:hidden px-4 pb-0">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -510,7 +510,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
         {/* Filters */}
         <div className="mb-8 mt-4 flex flex-col gap-2 border-y border-stone-200 bg-white/60 p-3 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap sm:mt-0" data-aos="fade-up" data-aos-delay="150">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto sm:flex-wrap" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -526,29 +526,29 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto sm:ml-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">FİYAT:</span>
             <input
               value={priceMin}
               onChange={(e) => setPriceMin(e.target.value.replace(/\D/g, ""))}
               placeholder="Min"
-              className="w-16 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+              className="w-14 rounded-full border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-stone-500"
             />
             <span className="text-[10px] text-stone-400">-</span>
             <input
               value={priceMax}
               onChange={(e) => setPriceMax(e.target.value.replace(/\D/g, ""))}
               placeholder="Maks"
-              className="w-16 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+              className="w-14 rounded-full border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-stone-500"
             />
             <span className="h-4 w-px bg-stone-300"></span>
             {(settings.shops || []).length > 1 && (
               <>
-                <span className="text-xs font-semibold text-stone-500">MAĞAZA:</span>
+                <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">MAĞAZA:</span>
                 <select
                   value={shopFilter}
                   onChange={(e) => setShopFilter(e.target.value)}
-                  className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+                  className="rounded-full border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-stone-500"
                 >
                   <option value="all">Tümü</option>
                   {settings.shops.map((s) => (
@@ -558,7 +558,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 <span className="h-4 w-px bg-stone-300"></span>
               </>
             )}
-            <span className="text-xs font-semibold text-stone-500">DURUM:</span>
+            <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">DURUM:</span>
             {([
               { id: "all", label: "Tümü" },
               { id: "new", label: "Sıfır" },
@@ -568,7 +568,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 key={c.id}
                 onClick={() => setConditionFilter(c.id)}
                 className={
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition " +
+                  "rounded-full border px-2.5 py-1.5 text-xs font-medium transition whitespace-nowrap " +
                   (conditionFilter === c.id
                     ? "border-stone-800 bg-stone-800 text-white"
                     : "border-stone-300 text-stone-600 hover:border-stone-500")

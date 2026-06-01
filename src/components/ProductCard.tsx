@@ -4,14 +4,14 @@ import { useStore, type Product } from "../lib/store";
 function ConditionBadge({ condition }: { condition: "new" | "second" }) {
   if (condition === "new") {
     return (
-      <span className="rounded-full bg-emerald-600/90 px-1 py-0 text-[7px] font-semibold text-white leading-none">
+      <span className="rounded-full bg-emerald-600/90 px-2 py-0.5 text-[10px] font-semibold text-white leading-tight">
         SIFIR
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-amber-600/90 px-1 py-0 text-[7px] font-semibold text-white leading-none">
-      2.EL
+    <span className="rounded-full bg-amber-600/90 px-2 py-0.5 text-[10px] font-semibold text-white leading-tight">
+      İKİNCİ EL
     </span>
   );
 }
@@ -63,6 +63,7 @@ export default function ProductCard({
 }) {
   const { compareIds, toggleCompare } = useStore();
   const [imgIndex, setImgIndex] = useState(0);
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
   const imgs = product.images.length ? product.images : [""];
   const discounted = product.hasDiscount && product.originalPriceNum && product.originalPriceNum > product.priceNum;
   const cardRef = useRef<HTMLButtonElement>(null);
@@ -121,14 +122,29 @@ export default function ProductCard({
             </div>
           ) : imgs[imgIndex] ? (
             <div className="relative h-full w-full">
-              <img
-                src={imgs[imgIndex]}
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
+              {imgErrors[imgIndex] ? (
+                <div className="flex h-full items-center justify-center bg-stone-200">
+                  <div className="text-center text-stone-400">
+                    <svg className="mx-auto mb-1 h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span className="text-[10px]">Görsel</span>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={imgs[imgIndex]}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                  onError={() => setImgErrors(prev => ({ ...prev, [imgIndex]: true }))}
+                />
+              )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-stone-400 bg-stone-300">Görsel yok</div>
+            <div className="flex h-full items-center justify-center text-stone-400 bg-stone-200">
+              <div className="text-center">
+                <svg className="mx-auto mb-1 h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span className="text-[10px] text-stone-400">Görsel yok</span>
+              </div>
+            </div>
           )}
         </div>
 
@@ -173,13 +189,13 @@ export default function ProductCard({
         <div className="absolute inset-0 z-0 rounded-t-xl pointer-events-none shadow-[inset_0_1px_3px_rgba(255,255,255,0.5),inset_0_-1px_2px_rgba(0,0,0,0.15)]" />
 
         {/* badges: discount > category > condition */}
-        <div className="absolute left-0.5 top-0.5 z-30 flex flex-col gap-0">
+        <div className="absolute left-1 top-1 z-30 flex flex-col gap-1">
           {discounted && (
-            <span className="rounded-full bg-red-600 px-1 py-0 text-[7px] font-bold text-white shadow-sm text-center leading-none">
-              %{product.discount || Math.round(((product.originalPriceNum! - product.priceNum) / product.originalPriceNum!) * 100)} İND.
+            <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-md text-center leading-tight">
+              %{product.discount || Math.round(((product.originalPriceNum! - product.priceNum) / product.originalPriceNum!) * 100)} İNDİRİM
             </span>
           )}
-          <span className="rounded-full bg-white/90 px-1 py-0 text-[7px] font-semibold text-stone-700 shadow-sm leading-none">
+          <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-stone-700 shadow-sm leading-tight">
             {product.category}
           </span>
           <ConditionBadge condition={product.condition} />
@@ -228,7 +244,7 @@ export default function ProductCard({
       </div>
 
       <div className="p-3">
-        <h3 className="line-clamp-1 font-medium text-stone-800">{product.name}</h3>
+        <h3 className="line-clamp-1 font-medium text-stone-800 pt-4 sm:pt-0">{product.name}</h3>
         <div className="mt-1 flex items-center justify-between gap-2">
           <div className="flex flex-col">
             {discounted && product.originalPrice ? (
