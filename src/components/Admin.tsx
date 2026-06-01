@@ -6,9 +6,11 @@ import {
   type Review,
   type DiscountCode,
   type Message,
+  type Auction,
 } from "../lib/store";
 import { Stars } from "./Stars";
 import ImageDropzone from "./ImageDropzone";
+import { AuctionDetailPanel } from "./AuctionDetailPanel";
 import logoSrc from "../logo-admin.png";
 
 const ADMIN_PASSWORD = "tanem123+";
@@ -1659,6 +1661,238 @@ function SettingsTab() {
   );
 }
 
+/* -------- Auctions -------- */
+function AuctionsTab() {
+  const { products, auctions, bids, createAuction, acceptBid, rejectBid, cancelAuction, getAuctionBids, addToast } = useStore();
+  const [draftProductId, setDraftProductId] = useState("");
+  const [draftPrice, setDraftPrice] = useState(100);
+  const [draftHours, setDraftHours] = useState(48);
+  const [draftIncrement, setDraftIncrement] = useState(10);
+  const [detailAuction, setDetailAuction] = useState<Auction | null>(null);
+  const [expandedBids, setExpandedBids] = useState<string | null>(null);
+
+  const activeAuctions = auctions.filter((a) => a.status === "active" || a.status === "sold");
+  const expiredAuctions = auctions.filter((a) => a.status === "expired" || a.status === "cancelled");
+
+  const handleCreate = () => {
+    if (!draftProductId || draftPrice <= 0) return;
+    createAuction(draftProductId, draftPrice, draftHours, draftIncrement);
+    setDraftProductId("");
+    setDraftPrice(100);
+    setDraftHours(48);
+  };
+
+  const now = Date.now();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-elegant text-xl text-stone-800">
+          Açık Artırmalar ({auctions.length})
+        </h2>
+      </div>
+
+      {/* Create auction */}
+      <div className="rounded-2xl border border-stone-300 bg-white p-5 shadow-sm">
+        <h3 className="mb-4 font-medium text-stone-800">Yeni Açık Artırma Oluştur</h3>
+        <div className="grid gap-4 sm:grid-cols-4">
+          <Field label="Ürün">
+            <select
+              value={draftProductId}
+              onChange={(e) => setDraftProductId(e.target.value)}
+              className="inp"
+            >
+              <option value="">Seçin</option>
+              {products
+                .filter((p) => !auctions.some((a) => a.productId === p.id && a.status === "active"))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {p.price}
+                  </option>
+                ))}
+            </select>
+          </Field>
+          <Field label="Başlangıç Fiyatı (₺)">
+            <input
+              type="number"
+              value={draftPrice}
+              onChange={(e) => setDraftPrice(Number(e.target.value) || 0)}
+              className="inp"
+              min={1}
+            />
+          </Field>
+          <Field label="Süre (saat)">
+            <select
+              value={draftHours}
+              onChange={(e) => setDraftHours(Number(e.target.value))}
+              className="inp"
+            >
+              <option value={1}>1 saat</option>
+              <option value={6}>6 saat</option>
+              <option value={12}>12 saat</option>
+              <option value={24}>24 saat</option>
+              <option value={48}>48 saat</option>
+              <option value={72}>3 gün</option>
+              <option value={168}>7 gün</option>
+            </select>
+          </Field>
+          <Field label="Min. Artış (₺)">
+            <input
+              type="number"
+              value={draftIncrement}
+              onChange={(e) => setDraftIncrement(Number(e.target.value) || 10)}
+              className="inp"
+              min={1}
+            />
+          </Field>
+        </div>
+        <button
+          onClick={handleCreate}
+          disabled={!draftProductId || draftPrice <= 0}
+          className="mt-4 rounded-lg bg-stone-800 px-5 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        >
+          Açık Artırmayı Başlat
+        </button>
+      </div>
+
+      {/* Active / Sold auctions */}
+      <div className="space-y-3">
+        {activeAuctions.map((a) => {
+          const product = products.find((p) => p.id === a.productId);
+          const abids = getAuctionBids(a.id);
+          const isExpired = a.status === "active" && now > a.endTime;
+          return (
+            <div key={a.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-4">
+                {product?.images[0] && (
+                  <img src={product.images[0]} alt="" className="h-20 w-16 shrink-0 rounded-xl object-cover" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-stone-800">{a.productName}</p>
+                      <p className="text-xs text-stone-400">
+                        Başlangıç: ₺{a.startPrice} · Güncel: ₺{a.currentPrice} · {a.bidCount} teklif
+                      </p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      a.status === "active" ? "bg-emerald-100 text-emerald-700" :
+                      a.status === "sold" ? "bg-blue-100 text-blue-700" :
+                      "bg-stone-200 text-stone-500"
+                    }`}>
+                      {a.status === "active" ? "Aktif" : a.status === "sold" ? `Satıldı — ₺${a.soldPrice}` : ""}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-400">
+                    {new Date(a.startTime).toLocaleString("tr-TR")} — {new Date(a.endTime).toLocaleString("tr-TR")}
+                  </p>
+                  {a.status === "active" && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setDetailAuction(a)}
+                        className="rounded-md border border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-100"
+                      >
+                        Detay
+                      </button>
+                      <button
+                        onClick={() => setExpandedBids(expandedBids === a.id ? null : a.id)}
+                        className="rounded-md border border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-100"
+                      >
+                        Teklifler ({abids.length})
+                      </button>
+                      <button
+                        onClick={() => cancelAuction(a.id)}
+                        className="rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        İptal Et
+                      </button>
+                    </div>
+                  )}
+                  {a.status === "sold" && (
+                    <div className="mt-2 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-2 text-xs text-emerald-800">
+                      Kazanan: {a.winnerName} — ₺{a.soldPrice}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bids dropdown */}
+              {expandedBids === a.id && (
+                <div className="mt-3 space-y-1.5 border-t border-stone-100 pt-3">
+                  {abids.length === 0 ? (
+                    <p className="text-xs text-stone-400">Henüz teklif yok</p>
+                  ) : (
+                    abids.map((b) => (
+                      <div key={b.id} className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+                        <div>
+                          <span className="text-sm font-medium text-stone-800">{b.userName}</span>
+                          <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            b.status === "active" ? "bg-amber-100 text-amber-700" :
+                            b.status === "accepted" ? "bg-emerald-100 text-emerald-700" :
+                            "bg-red-100 text-red-700"
+                          }`}>
+                            {b.status === "active" ? "Bekliyor" : b.status === "accepted" ? "Kabul" : "Red"}
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-stone-800">₺{b.amount}</span>
+                        {a.status === "active" && b.status === "active" && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => acceptBid(a.id, b.id)}
+                              className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-emerald-700"
+                            >
+                              Kabul
+                            </button>
+                            <button
+                              onClick={() => rejectBid(a.id, b.id)}
+                              className="rounded-md border border-red-200 px-2.5 py-1 text-[11px] text-red-600 hover:bg-red-50"
+                            >
+                              Red
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {activeAuctions.length === 0 && (
+          <p className="rounded-2xl border border-stone-200 bg-white p-6 text-center text-sm text-stone-400">
+            Henüz açık artırma yok
+          </p>
+        )}
+      </div>
+
+      {/* Expired / Cancelled */}
+      {expiredAuctions.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-semibold text-stone-500">Geçmiş Açık Artırmalar</h3>
+          <div className="space-y-2">
+            {expiredAuctions.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-stone-600">{a.productName}</p>
+                  <p className="text-xs text-stone-400">{a.bidCount} teklif · ₺{a.currentPrice}</p>
+                </div>
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-500">
+                  {a.status === "expired" ? "Süresi Doldu" : "İptal"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {detailAuction && (
+        <AuctionDetailPanel auction={detailAuction} onClose={() => setDetailAuction(null)} />
+      )}
+    </div>
+  );
+}
+
 /* -------- Field helper -------- */
 function Field({
   label,
@@ -1680,6 +1914,7 @@ function Field({
 /* ---------------- Shell ---------------- */
 const TABS = [
   { id: "products", label: "Ürünler" },
+  { id: "auctions", label: "Açık Artırma" },
   { id: "statistics", label: "İstatistikler" },
   { id: "discounts", label: "İndirimler" },
   { id: "reviews", label: "Yorumlar" },
@@ -1781,6 +2016,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
         </div>
 
         {tab === "products" && <ProductsTab />}
+        {tab === "auctions" && <AuctionsTab />}
         {tab === "statistics" && <StatsTab />}
         {tab === "discounts" && <DiscountsTab />}
         {tab === "reviews" && <ReviewsTab />}

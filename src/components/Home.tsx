@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useStore, type Product } from "../lib/store";
+import { useStore, type Product, type Auction } from "../lib/store";
 import { Stars } from "./Stars";
 import ChatWidget from "./ChatWidget";
 import ProductCard from "./ProductCard";
@@ -9,6 +9,7 @@ import AccountPanel from "./AccountPanel";
 import ComparePanel from "./ComparePanel";
 import SpinWheel from "./SpinWheel";
 import { Toast } from "./Toast";
+import { AuctionDetailPanel } from "./AuctionDetailPanel";
 import logoSrc from "../logo.png";
 
 type ConditionFilter = "all" | "new" | "second";
@@ -295,8 +296,9 @@ function InfoStrip() {
 }
 
 export default function Home({ onAdmin }: { onAdmin: () => void }) {
-  const { products, cart, favorites, currentUser, settings, compareIds, toggleCompare, addToCart, toasts, dismissToast } = useStore();
+  const { products, cart, favorites, currentUser, settings, compareIds, toggleCompare, addToCart, toasts, dismissToast, auctions } = useStore();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -361,6 +363,14 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
   const handleOpenCart = () => {
     setCartOpen(true);
     document.body.style.overflow = "hidden";
+  };
+  const handleOpenAuction = (a: Auction) => {
+    setSelectedAuction(a);
+    if (a) document.body.style.overflow = "hidden";
+  };
+  const handleCloseAuction = () => {
+    setSelectedAuction(null);
+    document.body.style.overflow = "";
   };
   const handleCloseCart = () => {
     setCartOpen(false);
@@ -567,6 +577,61 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         )}
       </main>
 
+      {/* Active Auctions */}
+      {auctions.filter((a) => a.status === "active").length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-10" data-aos="fade-up">
+          <div className="mb-6 text-center">
+            <p className="text-sm uppercase tracking-[0.25em] text-amber-700">Açık Artırma</p>
+            <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">Aktif Açık Artırmalar</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {auctions.filter((a) => a.status === "active").map((a) => {
+              const now = Date.now();
+              const diff = Math.max(0, a.endTime - now);
+              const h = Math.floor(diff / 3600000);
+              const m = Math.floor((diff % 3600000) / 60000);
+              const expired = diff <= 0;
+              return (
+                <div
+                  key={a.id}
+                  className="group cursor-pointer rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  onClick={() => handleOpenAuction(a)}
+                >
+                  {a.productImage && (
+                    <div className="mb-3 aspect-[4/3] overflow-hidden rounded-xl bg-stone-100">
+                      <img src={a.productImage} alt={a.productName} className="h-full w-full object-cover transition group-hover:scale-105" />
+                    </div>
+                  )}
+                  <h3 className="font-medium text-stone-800 truncate">{a.productName}</h3>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg bg-stone-50 p-2">
+                      <p className="text-stone-400">Güncel</p>
+                      <p className="font-bold text-stone-800">₺{a.currentPrice}</p>
+                    </div>
+                    <div className="rounded-lg bg-stone-50 p-2">
+                      <p className="text-stone-400">Teklif</p>
+                      <p className="font-bold text-amber-700">{a.bidCount}</p>
+                    </div>
+                    <div className="rounded-lg bg-stone-50 p-2">
+                      <p className="text-stone-400">Süre</p>
+                      <p className={`font-bold font-mono tabular-nums ${expired ? "text-red-600" : "text-stone-800"}`}>
+                        {expired ? "Bitti" : `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleOpenAuction(a); }}
+                    className="mt-3 w-full rounded-lg bg-stone-800 py-2 text-sm font-medium text-white hover:bg-stone-700"
+                  >
+                    Teklif Ver
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <InfoStrip />
       <ReviewSection />
 
@@ -640,6 +705,9 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       {/* Panels */}
       {selectedProduct && (
         <ProductDetailPanel product={selectedProduct} onClose={handleCloseProduct} onCartOpen={handleOpenCart} />
+      )}
+      {selectedAuction && (
+        <AuctionDetailPanel auction={selectedAuction} onClose={handleCloseAuction} />
       )}
       {cartOpen && <CartPanel onClose={handleCloseCart} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}

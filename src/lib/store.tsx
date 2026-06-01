@@ -303,6 +303,8 @@ const K = {
   favorites: "msgrdrps_favorites",
   cart: "msgrdrps_cart",
   compare: "msgrdrps_compare",
+  auctions: "msgrdrps_auctions",
+  bids: "msgrdrps_bids",
 };
 
 /* ------------------------- Account --------------------------- */
@@ -328,6 +330,34 @@ export interface SpinPrize {
   prize: string;
   label: string;
   date: number;
+}
+
+export interface Auction {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  startPrice: number;
+  currentPrice: number;
+  minIncrement: number;
+  startTime: number;
+  endTime: number;
+  status: "active" | "sold" | "expired" | "cancelled";
+  winnerId?: string;
+  winnerName?: string;
+  soldPrice?: number;
+  bidCount: number;
+  createdAt: number;
+}
+
+export interface Bid {
+  id: string;
+  auctionId: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  time: number;
+  status: "active" | "accepted" | "rejected";
 }
 
 /* --------------------------- Context -------------------------- */
@@ -393,6 +423,15 @@ interface StoreCtx {
   lastSpinDate: string;
   addSpinPrize: (p: SpinPrize) => void;
   setLastSpinDate: (d: string) => void;
+  // auctions
+  auctions: Auction[];
+  bids: Bid[];
+  createAuction: (productId: string, startPrice: number, durationHours: number, minIncrement?: number) => void;
+  placeBid: (auctionId: string, amount: number) => boolean;
+  acceptBid: (auctionId: string, bidId: string) => void;
+  rejectBid: (auctionId: string, bidId: string) => void;
+  cancelAuction: (auctionId: string) => void;
+  getAuctionBids: (auctionId: string) => Bid[];
   // toasts
   toasts: ToastMsg[];
   addToast: (text: string, type?: ToastMsg["type"]) => void;
@@ -437,6 +476,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() => load("orders", []));
   const [spinPrizes, setSpinPrizes] = useState<SpinPrize[]>(() => load("spinPrizes", []));
   const [lastSpinDate, setLastSpinDate] = useState<string>(() => load("lastSpinDate", ""));
+  const [auctions, setAuctions] = useState<Auction[]>(() => load(K.auctions, []));
+  const [bids, setBids] = useState<Bid[]>(() => load(K.bids, []));
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
   useEffect(() => save(K.products, products), [products]);
@@ -452,6 +493,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => save("orders", orders), [orders]);
   useEffect(() => save("spinPrizes", spinPrizes), [spinPrizes]);
   useEffect(() => save("lastSpinDate", lastSpinDate), [lastSpinDate]);
+  useEffect(() => save(K.auctions, auctions), [auctions]);
+  useEffect(() => save(K.bids, bids), [bids]);
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
@@ -463,6 +506,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (e.key === K.cart && e.newValue) setCart(JSON.parse(e.newValue));
       if (e.key === K.favorites && e.newValue) setFavorites(JSON.parse(e.newValue));
       if (e.key === K.compare && e.newValue) setCompareIds(JSON.parse(e.newValue));
+      if (e.key === K.auctions && e.newValue) setAuctions(JSON.parse(e.newValue));
+      if (e.key === K.bids && e.newValue) setBids(JSON.parse(e.newValue));
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
@@ -617,6 +662,96 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addSpinPrize = (p: SpinPrize) => setSpinPrizes((prev) => [p, ...prev]);
 
+  const createAuction = (productId: string, startPrice: number, durationHours: number, minIncrement = 10) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+    const now = Date.now();
+    const auction: Auction = {
+      id: uid(),
+      productId,
+      productName: product.name,
+      productImage: product.images[0] || "",
+      startPrice,
+      currentPrice: startPrice,
+      minIncrement,
+      startTime: now,
+      endTime: now + durationHours * 3600000,
+      status: "active",
+      bidCount: 0,
+      createdAt: now,
+    };
+    setAuctions((prev) => [auction, ...prev]);
+    addToast("Açık artırma oluşturuldu", "success");
+  };
+
+  const placeBid = (auctionId: string, amount: number): boolean => {
+    if (!currentUser) return false;
+    const auction = auctions.find((a) => a.id === auctionId);
+    if (!auction || auction.status !== "active" || Date.now() > auction.endTime) return false;
+    if (amount < auction.currentPrice + auction.minIncrement) return false;
+    const bid: Bid = {
+      id: uid(),
+      auctionId,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      amount,
+      time: Date.now(),
+      status: "active",
+    };
+    setBids((prev) => [...prev, bid]);
+    setAuctions((prev) =>
+      prev.map((a) =>
+        a.id === auctionId
+          ? { ...a, currentPrice: amount, bidCount: a.bidCount + 1 }
+          : a
+      )
+    );
+    addToast("Teklif verildi: ₺" + amount, "success");
+    return true;
+  };
+
+  const acceptBid = (auctionId: string, bidId: string) => {
+    setBids((prev) =>
+      prev.map((b) =>
+        b.id === bidId ? { ...b, status: "accepted" as const } : b
+      )
+    );
+    const bid = bids.find((b) => b.id === bidId);
+    setAuctions((prev) =>
+      prev.map((a) =>
+        a.id === auctionId
+          ? {
+              ...a,
+              status: "sold" as const,
+              winnerId: bid?.userId,
+              winnerName: bid?.userName,
+              soldPrice: bid?.amount,
+            }
+          : a
+      )
+    );
+    addToast("Teklif kabul edildi — ürün satıldı", "success");
+  };
+
+  const rejectBid = (auctionId: string, bidId: string) => {
+    setBids((prev) =>
+      prev.map((b) =>
+        b.id === bidId ? { ...b, status: "rejected" as const } : b
+      )
+    );
+    addToast("Teklif reddedildi", "info");
+  };
+
+  const cancelAuction = (auctionId: string) => {
+    setAuctions((prev) =>
+      prev.map((a) => (a.id === auctionId ? { ...a, status: "cancelled" as const } : a))
+    );
+    addToast("Açık artırma iptal edildi", "info");
+  };
+
+  const getAuctionBids = (auctionId: string) =>
+    bids.filter((b) => b.auctionId === auctionId).sort((a, b) => b.amount - a.amount);
+
   const addToast = (text: string, type: ToastMsg["type"] = "info") => {
     const id = Math.random().toString(36).slice(2, 9);
     setToasts((prev) => [...prev, { id, text, type }]);
@@ -717,6 +852,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         spinPrizes,
         lastSpinDate,
         setLastSpinDate,
+        auctions,
+        bids,
+        createAuction,
+        placeBid,
+        acceptBid,
+        rejectBid,
+        cancelAuction,
+        getAuctionBids,
         toasts,
         addToast,
         dismissToast,
