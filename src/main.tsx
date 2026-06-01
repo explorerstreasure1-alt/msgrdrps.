@@ -3,7 +3,8 @@ import "./index.css";
 import App from "./App";
 import { initScrollReveal } from "./scrollReveal";
 
-if ("serviceWorker" in navigator && !location.hostname.includes("localhost")) {
+// Only register SW in production (served by Express, not Vite dev server)
+if ("serviceWorker" in navigator && !location.hostname.includes("localhost") && !location.port) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js");
   });

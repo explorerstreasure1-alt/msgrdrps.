@@ -1,4 +1,4 @@
-const CACHE = "msgrdrps-v1";
+const CACHE = "msgrdrps-v2";
 const ASSETS = [
   "/",
   "/index.html",
