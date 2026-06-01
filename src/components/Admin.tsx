@@ -32,20 +32,20 @@ function Login({ onOk, onBack }: { onOk: () => void; onBack?: () => void }) {
   const [err, setErr] = useState(false);
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f7f1e7] px-5">
-      <div className="relative w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-8 shadow-xl">
+      <div className="relative w-full max-w-sm rounded-3xl bg-[#FDFBF7] p-10 shadow-[0_20px_50px_rgba(15,15,15,0.05)]">
         {onBack && (
-          <button onClick={onBack} className="absolute right-4 top-4 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600" aria-label="Geri">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          <button onClick={onBack} className="absolute right-4 top-4 rounded-full p-1 text-stone-300 hover:text-stone-800 transition-colors duration-200" aria-label="Geri">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         )}
-        <div className="mb-6 flex justify-center">
+        <div className="mb-8 flex justify-center animate-[fadeIn_0.5s_ease-out]">
           <img
             src={logoSrc}
             alt="MS"
             className="h-50 w-auto object-contain"
           />
         </div>
-        <p className="text-center text-sm text-stone-500">Admin Girişi</p>
+        <p className="text-center font-serif uppercase tracking-[0.15em] text-xs font-medium text-[#4A4641] mb-6">Admin Girişi</p>
         <input
           type="password"
           value={pw}
@@ -54,12 +54,12 @@ function Login({ onOk, onBack }: { onOk: () => void; onBack?: () => void }) {
             if (e.key === "Enter") pw === ADMIN_PASSWORD ? onOk() : setErr(true);
           }}
           placeholder="Şifre"
-          className="mt-4 w-full rounded-lg border border-stone-300 px-4 py-2.5 text-sm outline-none focus:border-stone-500"
+          className="mt-2 w-full border-b border-[#D4CFC9] bg-transparent px-0 py-3 text-sm text-stone-800 placeholder:text-[#A8A299] placeholder:tracking-wider placeholder:text-sm focus:border-[#1A1A1A] focus:outline-none transition-colors duration-200"
         />
-        {err && <p className="mt-2 text-xs text-red-600">Hatalı şifre.</p>}
+        {err && <p className="mt-3 text-xs text-red-500">Hatalı şifre.</p>}
         <button
           onClick={() => (pw === ADMIN_PASSWORD ? onOk() : setErr(true))}
-          className="mt-4 w-full rounded-lg bg-stone-800 py-2.5 text-sm font-medium text-white hover:bg-stone-700"
+          className="mt-8 w-full rounded-xl bg-[#111111] py-3 text-sm font-semibold text-white uppercase tracking-[0.2em] transition-all duration-300 hover:bg-[#2C2623] active:scale-[0.98]"
         >
           Giriş Yap
         </button>
