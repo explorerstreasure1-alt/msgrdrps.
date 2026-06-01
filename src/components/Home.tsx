@@ -58,7 +58,7 @@ function Logo({ className }: { className?: string }) {
       <img
         src={logoSrc}
         alt="MSgrdrps"
-        className={(className || "h-20") + " w-auto object-contain sm:h-72"}
+        className={(className || "h-24") + " w-auto object-contain sm:h-72"}
       />
     </a>
   );
