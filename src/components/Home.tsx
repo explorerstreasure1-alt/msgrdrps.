@@ -444,7 +444,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
         {/* Mobile: stacked — logo top, icons middle, search bottom */}
         <div className="md:hidden">
-          <Logo className="h-36 sm:h-40 mx-auto block py-4" />
+          <Logo className="h-40 sm:h-44 block pl-4 pt-4 pb-2" />
           <div className="flex items-center justify-center gap-1.5 pb-2 px-3">
             <button onClick={() => setAccountOpen(true)} className="flex items-center gap-1.5 rounded-full border border-stone-300 px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
