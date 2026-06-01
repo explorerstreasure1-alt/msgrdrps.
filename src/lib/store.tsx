@@ -556,9 +556,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (e.key === K.bids && e.newValue) setBids(JSON.parse(e.newValue));
       if (e.key === K.userCoupons && e.newValue) setUserCoupons(JSON.parse(e.newValue));
       if (e.key === K.userGifts && e.newValue) setUserGifts(JSON.parse(e.newValue));
+      if (e.key === "lastSpinDate" && e.newValue) setLastSpinDate(JSON.parse(e.newValue));
+      if (e.key === "spinPrizes" && e.newValue) setSpinPrizes(JSON.parse(e.newValue));
+      if (e.key === "giftProductId" && e.newValue) setGiftProductId(JSON.parse(e.newValue));
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = Date.now();
+      setAuctions((prev) =>
+        prev.map((a) =>
+          a.status === "active" && now > a.endTime ? { ...a, status: "expired" as const } : a
+        )
+      );
+    }, 10000);
+    return () => clearInterval(id);
   }, []);
 
   const addProduct = (p: Product) => setProducts((prev) => [p, ...prev]);
@@ -837,21 +852,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const acceptBid = (auctionId: string, bidId: string) => {
-    setBids((prev) =>
-      prev.map((b) =>
+    let foundBid: Bid | undefined;
+    setBids((prev) => {
+      const next = prev.map((b) =>
         b.id === bidId ? { ...b, status: "accepted" as const } : b
-      )
-    );
-    const bid = bids.find((b) => b.id === bidId);
+      );
+      foundBid = next.find((b) => b.id === bidId);
+      return next;
+    });
     setAuctions((prev) =>
       prev.map((a) =>
         a.id === auctionId
           ? {
               ...a,
               status: "sold" as const,
-              winnerId: bid?.userId,
-              winnerName: bid?.userName,
-              soldPrice: bid?.amount,
+              winnerId: foundBid?.userId,
+              winnerName: foundBid?.userName,
+              soldPrice: foundBid?.amount,
             }
           : a
       )

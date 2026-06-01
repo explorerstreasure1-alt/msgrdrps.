@@ -30,10 +30,10 @@ export default function ChatWidget() {
     useStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(() =>
-    localStorage.getItem("atelier_customer_name") || ""
+    localStorage.getItem("msgrdrps_customer_name") || ""
   );
   const [nameSet, setNameSet] = useState(() =>
-    Boolean(localStorage.getItem("atelier_customer_name"))
+    Boolean(localStorage.getItem("msgrdrps_customer_name"))
   );
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,7 @@ export default function ChatWidget() {
 
   const startChat = () => {
     if (!name.trim()) return;
-    localStorage.setItem("atelier_customer_name", name.trim());
+    localStorage.setItem("msgrdrps_customer_name", name.trim());
     setNameSet(true);
     ensureConversation(customerId, name.trim());
   };

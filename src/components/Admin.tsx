@@ -62,7 +62,7 @@ function Login({ onOk, onBack }: { onOk: () => void; onBack?: () => void }) {
         >
           Giriş Yap
         </button>
-        <p className="mt-4 text-center text-[11px] text-stone-400">Demo şifre: tanem123+</p>
+        
       </div>
     </div>
   );
@@ -1151,9 +1151,9 @@ function MessagesTab() {
   const active = conversations.find((c) => c.id === activeId);
 
   useEffect(() => {
-    if (active) markRead(active.id);
+    if (active && activeId) markRead(activeId);
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [active?.id, active?.messages.length, markRead]);
+  }, [activeId, active?.messages.length]);
 
   const send = (text: string, attachments?: Message["attachments"]) => {
     if (!active || (!text.trim() && (!attachments || attachments.length === 0))) return;
@@ -1662,7 +1662,7 @@ function SettingsTab() {
 }
 
 /* -------- Auctions -------- */
-function AuctionsTab() {
+function AuctionsTab({ onContact }: { onContact?: (userId: string, userName: string) => void }) {
   const { products, auctions, bids, createAuction, acceptBid, rejectBid, cancelAuction, getAuctionBids, addToast } = useStore();
   const [draftProductId, setDraftProductId] = useState("");
   const [draftPrice, setDraftPrice] = useState(100);
@@ -1887,7 +1887,7 @@ function AuctionsTab() {
       )}
 
       {detailAuction && (
-        <AuctionDetailPanel auction={detailAuction} onClose={() => setDetailAuction(null)} />
+        <AuctionDetailPanel auction={detailAuction} onClose={() => setDetailAuction(null)} onContact={onContact} />
       )}
     </div>
   );
@@ -2124,7 +2124,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     () => sessionStorage.getItem("msgrdrps_admin") === "1"
   );
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("products");
-  const { conversations, settings } = useStore();
+  const { conversations, settings, ensureConversation, sendMessage } = useStore();
   const unread = conversations.reduce((s, c) => s + c.unreadByAdmin, 0);
 
   // Auto-sync timer
@@ -2213,7 +2213,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
         </div>
 
         {tab === "products" && <ProductsTab />}
-        {tab === "auctions" && <AuctionsTab />}
+        {tab === "auctions" && <AuctionsTab onContact={(userId, userName) => { ensureConversation(userId, userName); sendMessage(userId, "admin", "Açık artırma teklifiniz kabul edildi. İletişime geçmek için yazın."); setTab("messages"); }} />}
         {tab === "wheel" && <WheelTab />}
         {tab === "statistics" && <StatsTab />}
         {tab === "discounts" && <DiscountsTab />}
