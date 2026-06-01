@@ -715,16 +715,19 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       {spinOpen && <SpinWheel onClose={() => setSpinOpen(false)} />}
       <ChatWidget />
 
-      {/* Spin wheel floating button */}
+      {/* Spin wheel floating button — top-left */}
       <button
         onClick={() => {
           if (currentUser) setSpinOpen(true);
           else setAccountOpen(true);
         }}
-        className="fixed bottom-24 right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+        className="fixed top-20 left-4 z-[70] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all duration-300 group"
         title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6a6 6 0 0 1 6 6"/><path d="M12 10a2 2 0 0 1 2 2"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:rotate-180"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6a6 6 0 0 1 6 6"/><path d="M12 10a2 2 0 0 1 2 2"/></svg>
+        <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-stone-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          Çark
+        </span>
       </button>
 
       {/* Toast container */}
