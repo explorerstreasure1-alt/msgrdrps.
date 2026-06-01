@@ -561,7 +561,7 @@ function ProductsTab() {
         {products.map((p) => (
           <div
             key={p.id}
-            className={"flex gap-3 rounded-xl border bg-white p-3 " + (batchMode && batchIds.has(p.id) ? "border-amber-400 ring-2 ring-amber-200" : "border-stone-200")}
+            className={"flex gap-3 rounded-xl border bg-[#FDFBF7] p-3 " + (batchMode && batchIds.has(p.id) ? "border-amber-400 ring-2 ring-amber-200" : "border-[#F1EDE9]")}
           >
             {batchMode && (
               <div className="flex items-center">
@@ -577,55 +577,66 @@ function ProductsTab() {
                 />
               </div>
             )}
-            <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-stone-100">
-              {p.images[0] && (
-                <img src={p.images[0]} alt="" className="h-full w-full object-cover" />
+            <div className="aspect-square w-20 shrink-0 overflow-hidden rounded-lg bg-[#F5F5F3]">
+              {p.images[0] ? (
+                <img src={p.images[0]} alt="" className="h-full w-full object-cover"
+                  onError={(e) => {
+                    const t = e.currentTarget;
+                    t.style.display = "none";
+                    t.parentElement!.classList.add("flex", "items-center", "justify-center");
+                    t.parentElement!.innerHTML = '<svg class="w-6 h-6 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+                  }}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <svg className="w-6 h-6 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
               )}
             </div>
-              <div className="flex flex-1 flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-stone-800">{p.name}</p>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span
-                      className={
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold text-white " +
-                        (p.condition === "new" ? "bg-emerald-600" : "bg-amber-600")
-                      }
-                    >
-                      {p.condition === "new" ? "SIFIR" : "İKİNCİ EL"}
-                    </span>
-                    {p.hasDiscount && p.originalPriceNum && p.originalPriceNum > p.priceNum && (
-                      <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                        %{p.discount || Math.round(((p.originalPriceNum - p.priceNum) / p.originalPriceNum) * 100)} İNDİRİM
-                      </span>
-                    )}
-                  </div>
+              <div className="flex flex-1 flex-col min-w-0">
+                <div className="flex items-start gap-2">
+                  <p className="flex-1 truncate text-sm font-medium text-stone-800">{p.name}</p>
                 </div>
-                <p className="text-xs text-stone-400">
-                  {p.category} · Stok: {p.stock} · Hediye: {p.gifts.length}
-                </p>
-                <div className="flex flex-col">
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span
+                    className={
+                      "rounded px-1.5 py-[1px] text-[9px] uppercase font-bold tracking-wider " +
+                      (p.condition === "new" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")
+                    }
+                  >
+                    {p.condition === "new" ? "Sıfır" : "2.El"}
+                  </span>
+                  <span className="rounded bg-stone-100 px-1.5 py-[1px] text-[9px] font-medium text-stone-500">
+                    {p.category}
+                  </span>
+                  {p.hasDiscount && p.originalPriceNum && p.originalPriceNum > p.priceNum && (
+                    <span className="rounded bg-red-50 px-1.5 py-[1px] text-[9px] font-bold text-red-600">
+                      %{p.discount || Math.round(((p.originalPriceNum - p.priceNum) / p.originalPriceNum) * 100)}
+                    </span>
+                  )}
+                  <span className="text-[9px] text-stone-400">·</span>
+                  <span className="text-[9px] text-stone-400">Stok: {p.stock}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-2">
                   {p.hasDiscount && p.originalPrice ? (
                     <>
-                      <span className="text-[11px] text-stone-400 line-through decoration-red-500">
-                        {p.originalPrice}
-                      </span>
+                      <span className="text-[11px] text-stone-400 line-through">{p.originalPrice}</span>
                       <span className="text-sm font-bold text-red-600">{p.price}</span>
                     </>
                   ) : (
                     <span className="text-sm font-semibold text-stone-700">{p.price}</span>
                   )}
                 </div>
-                <div className="mt-auto flex gap-2 pt-2">
+                <div className="mt-auto flex items-center gap-3 pt-2">
                   <button
                     onClick={() => startEdit(p)}
-                    className="rounded-md border border-stone-300 px-2 py-1 text-xs text-stone-600 hover:bg-stone-100"
+                    className="text-xs font-medium text-stone-500 hover:text-stone-800 transition-colors"
                   >
                     Düzenle
                   </button>
                   <button
                     onClick={() => removeProduct(p.id)}
-                    className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    className="text-xs font-medium text-stone-400 hover:text-red-600 transition-colors"
                   >
                     Sil
                   </button>
@@ -2299,21 +2310,22 @@ export default function Admin({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="min-h-screen bg-[#f7f1e7]">
-      <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
+      <header className="border-b border-[#F1EDE9] bg-[#FDFBF7]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
+          <div className="flex items-center gap-2">
             <img
             src={logoSrc}
             alt="MS"
-            className="h-50 w-auto object-contain"
+            className="h-12 w-auto object-contain sm:h-50"
             />
-            <span className="text-sm font-medium text-stone-400">panel</span>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-stone-300">panel</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={onExit}
-              className="rounded-full border border-stone-300 px-4 py-1.5 text-sm text-stone-600 hover:bg-stone-100"
+              className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-stone-700 transition-colors"
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               Siteye Dön
             </button>
             <button
@@ -2321,41 +2333,41 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                 sessionStorage.removeItem("msgrdrps_admin");
                 setAuthed(false);
               }}
-              className="rounded-full bg-stone-800 px-4 py-1.5 text-sm text-white hover:bg-stone-700"
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-500 hover:border-stone-400 hover:text-stone-700 transition-colors"
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               Çıkış
             </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-5 py-6">
-        <div className="mb-6 flex flex-wrap gap-2">
+      {/* Navigation ribbon */}
+      <div className="mx-auto max-w-7xl px-5 py-4 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="flex gap-1 min-w-max">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="relative whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition"
+              className={
+                "relative whitespace-nowrap px-4 py-2 text-xs font-medium tracking-wide transition-colors rounded-lg " +
+                (tab === t.id
+                  ? "bg-stone-800 text-white"
+                  : "text-stone-500 hover:text-stone-800 hover:bg-stone-100")
+              }
             >
-              <span
-                className={
-                  "inline-block rounded-full px-3 py-1 transition " +
-                  (tab === t.id
-                    ? "bg-stone-800 text-white"
-                    : "border border-stone-300 text-stone-600 hover:border-stone-500")
-                }
-              >
-                {t.label}
-              </span>
+              {t.label}
               {t.id === "messages" && unread > 0 && (
-                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] text-white">
                   {unread}
                 </span>
               )}
             </button>
           ))}
         </div>
+      </div>
 
+      <div className="mx-auto max-w-7xl px-5 py-2">
         {tab === "products" && <ProductsTab />}
         {tab === "orders" && <OrdersTab />}
         {tab === "auctions" && <AuctionsTab onContact={(userId, userName) => { ensureConversation(userId, userName); sendMessage(userId, "admin", "Açık artırma teklifiniz kabul edildi. İletişime geçmek için yazın."); setTab("messages"); }} />}
