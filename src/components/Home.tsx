@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useStore, type Product, type Auction } from "../lib/store";
 import { Stars } from "./Stars";
 import ChatWidget from "./ChatWidget";
@@ -280,7 +280,7 @@ function InfoStrip() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-12" data-aos="fade-up">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((it, i) => (
+        {items.map((it) => (
           <div
             key={it.title}
             className="rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-md"
@@ -296,7 +296,7 @@ function InfoStrip() {
 }
 
 export default function Home({ onAdmin }: { onAdmin: () => void }) {
-  const { products, cart, favorites, currentUser, settings, compareIds, toggleCompare, addToCart, toasts, dismissToast, auctions } = useStore();
+  const { products, cart, favorites, currentUser, settings, compareIds, addToCart, toasts, dismissToast, auctions } = useStore();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -312,6 +312,17 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     "default"
   );
   const [shopFilter, setShopFilter] = useState("all");
+
+  // URL param parsing for product share links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("product");
+    if (productId) {
+      const p = products.find((x) => x.id === productId);
+      if (p) setSelectedProduct(p);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [products]);
 
   const categories = useMemo(
     () => ["Tümü", ...Array.from(new Set(products.map((p) => p.category)))],

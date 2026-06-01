@@ -18,7 +18,7 @@ function ConditionBadge({ condition }: { condition: "new" | "second" }) {
 
 /* Gold dust falling particles for discounted products */
 function GoldShimmer() {
-  const particles = Array.from({ length: 16 }, (_, i) => ({
+  const particles = Array.from({ length: 16 }, (_, __) => ({
     left: Math.random() * 100,
     delay: Math.random() * 2.5,
     duration: 2.5 + Math.random() * 1.5,

@@ -45,7 +45,7 @@ const COLORS = [
 const POOL = [0,0,0, 1,1,1, 2,2, 3, 4, 5,5, 6, 7,7,7];
 
 export default function SpinWheel({ onClose }: { onClose: () => void }) {
-  const { currentUser, addSpinPrize, lastSpinDate, setLastSpinDate, addToast, addUserCoupon, addUserGift, addPoints, setFastShipping, userGifts, products, giftProductId, spinPrizes } = useStore();
+  const { currentUser, addSpinPrize, spinSlots, getCurrentSlot, useSlot, addToast, addUserCoupon, addUserGift, addPoints, setFastShipping, userGifts, products, giftProductId, spinPrizes } = useStore();
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<{ label: string; icon: string; prize: string; code?: string } | null>(null);
@@ -57,21 +57,16 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
   useEffect(() => { const t = setTimeout(() => setEntering(false), 400); return () => clearTimeout(t); }, []);
 
   const today = new Date().toDateString();
-  const canSpin = !!currentUser && lastSpinDate !== today;
-
-  let nextSpinTime = "";
-  if (lastSpinDate === today) {
-    const tom = new Date();
-    tom.setDate(tom.getDate() + 1);
-    tom.setHours(0, 0, 0, 0);
-    const diff = tom.getTime() - Date.now();
-    nextSpinTime = `${Math.floor(diff / 3600000)}s ${Math.floor((diff % 3600000) / 60000)}d`;
-  }
+  const curSlot = getCurrentSlot();
+  const slotsUsed = spinSlots.date === today ? spinSlots.slots : [];
+  const canSpin = !!currentUser && curSlot !== null && !slotsUsed.includes(curSlot);
 
   const myLastSpins = spinPrizes.filter((s) => s.date > Date.now() - 86400000 * 7).slice(0, 10);
 
   const spin = () => {
-    if (!canSpin || spinning || !currentUser) return;
+    if (spinning) return;
+    if (!currentUser) { addToast("Çevirmek için giriş yapmalısın", "error"); return; }
+    if (!canSpin) { addToast(curSlot === null ? "Şu anda çevirme zamanı değil. 10:00 / 13:00 / 20:00'yi bekle." : "Bu saat diliminde çevirdin!", "info"); return; }
     setSpinning(true);
     setResult(null);
     setCelebrate(false);
@@ -84,7 +79,7 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
     const totalRotation = baseSpins + degreesToStop;
 
     setRotation(totalRotation);
-    setLastSpinDate(today);
+    useSlot();
 
     setTimeout(() => {
       setSpinning(false);
@@ -95,9 +90,14 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
       else if (seg.prize === "discount15") { code = addUserCoupon(currentUser.id, 15); msg = "%15 indirim kuponu kazandın!"; }
       else if (seg.prize === "discount20") { code = addUserCoupon(currentUser.id, 20); msg = "%20 indirim kuponu kazandın!"; }
       else if (seg.prize === "gift") {
-        const gp = products.find((p) => p.id === giftProductId) || products[0];
-        if (gp && !userGifts.some((g) => g.productId === gp.id && !g.claimed)) addUserGift(currentUser.id, gp.id, gp.name);
-        msg = gp ? `${gp.name} hediye kazandın!` : "Hediye kazandın!";
+        const gp = giftProductId ? products.find((p) => p.id === giftProductId) : undefined;
+        if (gp && gp.stock > 0) {
+          if (!userGifts.some((g) => g.productId === gp.id && !g.claimed)) addUserGift(currentUser.id, gp.id, gp.name);
+          msg = `${gp.name} hediye kazandın!`;
+        } else {
+          addPoints(currentUser.id, 100);
+          msg = "Hediye ürün bulunamadı, 100 puan verildi!";
+        }
       }
       else if (seg.prize === "points50") { addPoints(currentUser.id, 50); msg = "50 sadakat puanı kazandın!"; }
       else if (seg.prize === "points100") { addPoints(currentUser.id, 100); msg = "100 sadakat puanı kazandın!"; }
@@ -123,10 +123,7 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
 
         <div className="mb-4 text-center">
           <h2 className="font-elegant text-xl font-semibold text-[#4a3e31] tracking-wide">Çarkı Çevir & Kazan</h2>
-          <p className="mt-1 text-[11px] uppercase tracking-[0.15em] text-stone-400">
-            {canSpin ? "Her gün 1 çevirme hakkın var" : `Yarına kalan: ${nextSpinTime}`}
-          </p>
-          {!currentUser && <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-4 py-1.5 inline-block">Çevirmek için giriş yapmalısın</p>}
+          <p className="mt-1 text-[11px] uppercase tracking-[0.15em] text-stone-400">Günde 3 çevirme — Saat 10:00 / 13:00 / 20:00</p>
         </div>
 
         <div className="relative mx-auto mb-4 w-64 h-64 sm:w-72 sm:h-72">
@@ -220,15 +217,14 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
 
         <button
           onClick={spin}
-          disabled={!canSpin || spinning}
+          disabled={spinning}
           className="mx-auto block rounded-full px-10 py-3 text-sm font-bold text-white tracking-wider shadow-lg transition-all duration-300 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95"
           style={{
-            background: !canSpin ? "#d6d3d1" : spinning ? "#dcd9d4" : "linear-gradient(135deg, #d4af37, #a68958, #8c7343)",
-            boxShadow: !canSpin || spinning ? "none" : "0 8px 25px rgba(166, 137, 88, 0.4)",
-            color: !canSpin ? "#a8a29e" : "#ffffff",
+            background: spinning ? "#dcd9d4" : "linear-gradient(135deg, #d4af37, #a68958, #8c7343)",
+            boxShadow: spinning ? "none" : "0 8px 25px rgba(166, 137, 88, 0.4)",
           }}
         >
-          {spinning ? "✨ Çevriliyor..." : !canSpin ? (!currentUser ? "🔒 Giriş Yap" : "⏰ Yarın Gel") : "🎯 ŞANSINI DENE"}
+          {spinning ? "✨ Çevriliyor..." : "🎯 ŞANSINI DENE"}
         </button>
 
         {/* Result popup */}

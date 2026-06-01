@@ -6,13 +6,16 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "node server/index.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
+    "dev:all": "concurrently -k \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
     "start": "node server/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
+    "cheerio": "^1.1.0",
     "clsx": "2.1.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "3.4.0"
@@ -23,6 +26,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
+    "concurrently": "^9.2.1",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "vite": "7.3.2",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStore, type Auction, type Bid } from "../lib/store";
+import { useStore, type Auction } from "../lib/store";
 
 function Countdown({ endTime }: { endTime: number }) {
   const [now, setNow] = useState(Date.now());
@@ -28,7 +28,7 @@ export function AuctionDetailPanel({
   onClose: () => void;
   onContact?: (userId: string, userName: string) => void;
 }) {
-  const { currentUser, placeBid, getAuctionBids, bids: allBids, conversations, ensureConversation, sendMessage } = useStore();
+  const { currentUser, placeBid, getAuctionBids, ensureConversation, sendMessage } = useStore();
   const [bidAmount, setBidAmount] = useState(auction.currentPrice + auction.minIncrement);
   const [showBids, setShowBids] = useState(false);
   const bids = getAuctionBids(auction.id);

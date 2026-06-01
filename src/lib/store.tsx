@@ -350,6 +350,11 @@ export interface Order {
   total: number;
   date: number;
   status: "pending" | "paid" | "shipped" | "delivered";
+  shippingAddress: { name: string; phone: string; city: string; district: string; address: string };
+  couponUsed?: string;
+  pointsUsed?: number;
+  fastShippingUsed?: boolean;
+  giftClaimed?: string;
 }
 
 export interface SpinPrize {
@@ -432,11 +437,13 @@ interface StoreCtx {
   ensureConversation: (id: string, name: string) => void;
   // account
   currentUser: User | null;
+  users: User[];
   orders: Order[];
   register: (name: string, email: string, password: string) => User | null;
   login: (email: string, password: string) => User | null;
   logout: () => void;
-  placeOrder: () => void;
+  placeOrder: (address: Order["shippingAddress"], options?: { total?: number; couponId?: string; pointsUsed?: number; fastShippingUsed?: boolean; giftIds?: string[] }) => string | null;
+  updateOrderStatus: (orderId: string, status: Order["status"]) => void;
   // favorites & cart
   toggleFavorite: (id: string) => void;
   addToCart: (item: CartItem) => void;
@@ -447,9 +454,10 @@ interface StoreCtx {
   toggleCompare: (id: string) => void;
   // spin wheel
   spinPrizes: SpinPrize[];
-  lastSpinDate: string;
+  spinSlots: { date: string; slots: number[] };
+  getCurrentSlot: () => number | null;
+  useSlot: () => void;
   addSpinPrize: (p: SpinPrize) => void;
-  setLastSpinDate: (d: string) => void;
   // coupons / gifts / points
   userCoupons: UserCoupon[];
   userGifts: UserGiftClaim[];
@@ -515,7 +523,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(() => load("users", []));
   const [orders, setOrders] = useState<Order[]>(() => load("orders", []));
   const [spinPrizes, setSpinPrizes] = useState<SpinPrize[]>(() => load("spinPrizes", []));
-  const [lastSpinDate, setLastSpinDate] = useState<string>(() => load("lastSpinDate", ""));
+  const [spinSlots, setSpinSlots] = useState<{ date: string; slots: number[] }>(() => load("spinSlots", { date: "", slots: [] }));
   const [auctions, setAuctions] = useState<Auction[]>(() => load(K.auctions, []));
   const [bids, setBids] = useState<Bid[]>(() => load(K.bids, []));
   const [userCoupons, setUserCoupons] = useState<UserCoupon[]>(() => load(K.userCoupons, []));
@@ -535,7 +543,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => save("users", users), [users]);
   useEffect(() => save("orders", orders), [orders]);
   useEffect(() => save("spinPrizes", spinPrizes), [spinPrizes]);
-  useEffect(() => save("lastSpinDate", lastSpinDate), [lastSpinDate]);
+  useEffect(() => save("spinSlots", spinSlots), [spinSlots]);
   useEffect(() => save(K.auctions, auctions), [auctions]);
   useEffect(() => save(K.bids, bids), [bids]);
   useEffect(() => save(K.userCoupons, userCoupons), [userCoupons]);
@@ -556,7 +564,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (e.key === K.bids && e.newValue) setBids(JSON.parse(e.newValue));
       if (e.key === K.userCoupons && e.newValue) setUserCoupons(JSON.parse(e.newValue));
       if (e.key === K.userGifts && e.newValue) setUserGifts(JSON.parse(e.newValue));
-      if (e.key === "lastSpinDate" && e.newValue) setLastSpinDate(JSON.parse(e.newValue));
+      if (e.key === "spinSlots" && e.newValue) setSpinSlots(JSON.parse(e.newValue));
       if (e.key === "spinPrizes" && e.newValue) setSpinPrizes(JSON.parse(e.newValue));
       if (e.key === "giftProductId" && e.newValue) setGiftProductId(JSON.parse(e.newValue));
     };
@@ -710,10 +718,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     );
 
   const toggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-    addToast("Beğenilere eklendi", "success");
+    setFavorites((prev) => {
+      const exists = prev.includes(id);
+      addToast(exists ? "Beğenilerden kaldırıldı" : "Beğenilere eklendi", exists ? "info" : "success");
+      return exists ? prev.filter((x) => x !== id) : [...prev, id];
+    });
   };
 
   const toggleCompare = (id: string) => {
@@ -724,6 +733,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const addSpinPrize = (p: SpinPrize) => setSpinPrizes((prev) => [p, ...prev]);
+
+  const getCurrentSlot = (): number | null => {
+    const h = new Date().getHours();
+    if (h >= 10 && h < 13) return 0;
+    if (h >= 13 && h < 20) return 1;
+    if (h >= 20) return 2;
+    return null;
+  };
+
+  const useSlot = () => {
+    const slot = getCurrentSlot();
+    if (slot === null) return;
+    const today = new Date().toDateString();
+    setSpinSlots((prev) => {
+      if (prev.date !== today) return { date: today, slots: [slot] };
+      if (prev.slots.includes(slot)) return prev;
+      return { ...prev, slots: [...prev.slots, slot] };
+    });
+  };
 
   const addUserCoupon = (userId: string, discountPercent: number): string => {
     const code = "CW" + Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -876,7 +904,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addToast("Teklif kabul edildi — ürün satıldı", "success");
   };
 
-  const rejectBid = (auctionId: string, bidId: string) => {
+  const rejectBid = (_auctionId: string, bidId: string) => {
     setBids((prev) =>
       prev.map((b) =>
         b.id === bidId ? { ...b, status: "rejected" as const } : b
@@ -906,15 +934,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setCart((prev) => {
       const existing = prev.find((x) => x.productId === item.productId);
       if (existing) {
+        const newQty = Math.max(0, existing.quantity + item.quantity);
+        if (newQty === 0) {
+          addToast("Sepetten çıkarıldı", "info");
+          return prev.filter((x) => x.productId !== item.productId);
+        }
         return prev.map((x) =>
           x.productId === item.productId
-            ? { ...x, quantity: x.quantity + item.quantity, giftId: item.giftId || x.giftId }
+            ? { ...x, quantity: newQty, giftId: item.giftId || x.giftId }
             : x
         );
       }
       return [...prev, item];
     });
-    addToast("Sepete eklendi", "success");
+    if (item.quantity > 0) addToast("Sepete eklendi", "success");
   };
 
   const removeFromCart = (id: string) =>
@@ -939,21 +972,51 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const logout = () => setCurrentUser(null);
 
-  const placeOrder = () => {
-    if (!currentUser || cart.length === 0) return;
-    const items = cart
-      .map((ci) => {
-        const p = products.find((x) => x.id === ci.productId);
-        if (!p) return null;
-        return { productId: ci.productId, quantity: ci.quantity, price: p.priceNum, name: p.name };
-      })
-      .filter(Boolean) as Order["items"];
-    const order: Order = { id: uid(), items, total: items.reduce((s, i) => s + i.price * i.quantity, 0), date: Date.now(), status: "pending" };
+  const decrementStock = (productId: string, qty: number) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? { ...p, stock: Math.max(0, p.stock - qty) } : p
+      )
+    );
+  };
+
+  const updateOrderStatus = (orderId: string, status: Order["status"]) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    addToast("Sipariş durumu güncellendi", "success");
+  };
+
+  const placeOrder = (address: Order["shippingAddress"], options?: { total?: number; couponId?: string; pointsUsed?: number; fastShippingUsed?: boolean; giftIds?: string[] }): string | null => {
+    if (!currentUser || cart.length === 0) return null;
+    const items: Order["items"] = [];
+    for (const ci of cart) {
+      const p = products.find((x) => x.id === ci.productId);
+      if (!p || p.stock < ci.quantity) {
+        addToast(p ? `"${p.name}" stokta yetersiz (kalan: ${p.stock})` : "Ürün bulunamadı", "error");
+        return null;
+      }
+      items.push({ productId: ci.productId, quantity: ci.quantity, price: p.priceNum, name: p.name });
+    }
+    for (const ci of cart) {
+      decrementStock(ci.productId, ci.quantity);
+    }
+    const total = options?.total ?? items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const order: Order = {
+      id: uid(), items, total, date: Date.now(), status: "pending", shippingAddress: address,
+      couponUsed: options?.couponId,
+      pointsUsed: options?.pointsUsed,
+      fastShippingUsed: options?.fastShippingUsed,
+      giftClaimed: options?.giftIds?.length ? options.giftIds.join(", ") : undefined,
+    };
     setOrders((prev) => [...prev, order]);
     setCurrentUser((prev) => prev ? { ...prev, orderIds: [...prev.orderIds, order.id] } : prev);
     setUsers((prev) => prev.map((u) => u.id === currentUser.id ? { ...u, orderIds: [...u.orderIds, order.id] } : u));
+    if (options?.couponId) useCoupon(options.couponId, order.id);
+    if (options?.pointsUsed && options.pointsUsed > 0) spendPoints(currentUser.id, options.pointsUsed);
+    if (options?.fastShippingUsed) useFastShipping(currentUser.id);
+    if (options?.giftIds) options.giftIds.forEach((gid) => claimGift(gid, order.id));
     setCart([]);
-    addToast("Sipariş alındı!", "success");
+    addToast("Sipariş alındı! 🎉", "success");
+    return order.id;
   };
 
   return (
@@ -968,6 +1031,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         favorites,
         cart,
         currentUser,
+        users,
         orders,
         register,
         login,
@@ -993,8 +1057,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         compareIds,
         addSpinPrize,
         spinPrizes,
-        lastSpinDate,
-        setLastSpinDate,
+        spinSlots,
+        getCurrentSlot,
+        useSlot,
         userCoupons,
         userGifts,
         addUserCoupon,
@@ -1010,6 +1075,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         auctions,
         bids,
         createAuction,
+        placeBid,
         acceptBid,
         rejectBid,
         cancelAuction,
@@ -1020,6 +1086,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         clearCart,
+        updateOrderStatus,
       }}
     >
       {children}

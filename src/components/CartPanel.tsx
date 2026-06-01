@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useStore, GARDROPS_DEFAULT } from "../lib/store";
+import { useStore } from "../lib/store";
 
 export default function CartPanel({ onClose }: { onClose: () => void }) {
-  const { cart, products, discounts, addToCart, removeFromCart, clearCart, currentUser, userCoupons, userGifts, useCoupon, claimGift, spendPoints, useFastShipping, addToast } = useStore();
+  const { cart, products, discounts, addToCart, removeFromCart, clearCart, currentUser, userCoupons, userGifts, addToast, placeOrder } = useStore();
   const [codeInput, setCodeInput] = useState("");
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
   const [codeError, setCodeError] = useState("");
@@ -64,25 +64,39 @@ export default function CartPanel({ onClose }: { onClose: () => void }) {
   const handleClaimGift = (giftId: string) => {
     const gift = userGifts.find((g) => g.id === giftId);
     if (!gift) return;
-    const existing = cart.find((i) => i.productId === gift.productId);
-    if (existing) {
-      addToCart({ productId: gift.productId, quantity: 1 });
-    } else {
-      addToCart({ productId: gift.productId, quantity: 1 });
-    }
+    addToCart({ productId: gift.productId, quantity: 1 });
     setClaimingGiftId(giftId);
-    claimGift(giftId, "pending");
     addToast(`${gift.productName} sepete eklendi!`, "success");
   };
 
-  const handleCheckout = () => {
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [address, setAddress] = useState({ name: currentUser?.name || "", phone: "", city: "", district: "", address: "" });
+  const [orderCompleteId, setOrderCompleteId] = useState<string | null>(null);
+
+  const startCheckout = () => {
     if (!currentUser) return;
-    if (selectedCouponId) useCoupon(selectedCouponId, "pending");
-    if (pointsToSpend > 0) spendPoints(currentUser.id, pointsToSpend);
-    if (hasFastShipping) useFastShipping(currentUser.id);
-    addToast("Sipariş alındı! (Demo)", "success");
-    clearCart();
-    onClose();
+    setShowAddressForm(true);
+  };
+
+  const submitOrder = () => {
+    if (!currentUser) return;
+    if (!address.name || !address.phone || !address.city || !address.district || !address.address) {
+      addToast("Lütfen tüm adres alanlarını doldur", "error");
+      return;
+    }
+    const usedGiftIds = userGifts
+      .filter((g) => g.userId === currentUser.id && !g.claimed && cart.some((c) => c.productId === g.productId))
+      .map((g) => g.id);
+    const orderId = placeOrder(address, {
+      total,
+      couponId: selectedCouponId || undefined,
+      pointsUsed: pointsToSpend > 0 ? pointsToSpend : undefined,
+      fastShippingUsed: hasFastShipping || undefined,
+      giftIds: usedGiftIds.length > 0 ? usedGiftIds : undefined,
+    });
+    if (!orderId) return;
+    setOrderCompleteId(orderId);
+    setShowAddressForm(false);
   };
 
   return (
@@ -308,16 +322,52 @@ export default function CartPanel({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {cart.length > 0 && (
+        {cart.length > 0 && !showAddressForm && !orderCompleteId && (
           <div className="border-t border-stone-200 p-4">
             <div className="flex flex-col gap-2">
               <button
-                onClick={handleCheckout}
-                className="w-full rounded-full bg-stone-800 py-3 text-sm font-medium text-white hover:bg-stone-700"
+                onClick={startCheckout}
+                disabled={!currentUser}
+                className="w-full rounded-full bg-stone-800 py-3 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Siparişi Tamamla
+                {currentUser ? "Siparişi Tamamla" : "Giriş yapmalısın"}
               </button>
+              <button onClick={onClose} className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700">Alışverişe Devam Et</button>
               <button onClick={clearCart} className="rounded-full border border-stone-300 py-2 text-xs text-stone-600 hover:bg-stone-50">Sepeti Temizle</button>
+            </div>
+          </div>
+        )}
+
+        {/* Address form */}
+        {showAddressForm && (
+          <div className="border-t border-stone-200 p-4">
+            <h3 className="text-sm font-semibold text-stone-800 mb-3">Teslimat Adresi</h3>
+            <div className="space-y-2">
+              <input value={address.name} onChange={(e) => setAddress({ ...address, name: e.target.value })} placeholder="Ad Soyad" className="inp w-full text-xs" />
+              <input value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} placeholder="Telefon" type="tel" className="inp w-full text-xs" />
+              <div className="flex gap-2">
+                <input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="İl" className="inp w-1/2 text-xs" />
+                <input value={address.district} onChange={(e) => setAddress({ ...address, district: e.target.value })} placeholder="İlçe" className="inp w-1/2 text-xs" />
+              </div>
+              <textarea value={address.address} onChange={(e) => setAddress({ ...address, address: e.target.value })} placeholder="Açık adres" className="inp w-full text-xs min-h-[60px]" />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button onClick={submitOrder} className="flex-1 rounded-full bg-stone-800 py-3 text-sm font-medium text-white hover:bg-stone-700">Siparişi Onayla</button>
+              <button onClick={() => setShowAddressForm(false)} className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:bg-stone-50">İptal</button>
+            </div>
+          </div>
+        )}
+
+        {/* Order complete */}
+        {orderCompleteId && (
+          <div className="border-t border-stone-200 p-4 text-center">
+            <div className="text-3xl mb-2">🎉</div>
+            <h3 className="text-base font-bold text-stone-800">Siparişin Alındı!</h3>
+            <p className="mt-1 text-xs text-stone-500">Sipariş #: {orderCompleteId}</p>
+            <p className="text-xs text-stone-500 mt-1">Ödeme Gardrops üzerinden yapılacak.</p>
+            <div className="mt-3 flex gap-2 justify-center">
+              <button onClick={onClose} className="rounded-full bg-stone-800 px-6 py-2 text-xs font-medium text-white hover:bg-stone-700">Alışverişe Devam Et</button>
+              <button onClick={() => { clearCart(); setOrderCompleteId(null); }} className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:bg-stone-50">Tamam</button>
             </div>
           </div>
         )}

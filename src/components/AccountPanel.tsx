@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useStore, type Order } from "../lib/store";
+import { useStore } from "../lib/store";
 
 export default function AccountPanel({ onClose }: { onClose: () => void }) {
-  const { register, login, logout, placeOrder, currentUser, orders, cart } = useStore();
+  const { register, login, logout, currentUser, orders, cart } = useStore();
   const [mode, setMode] = useState<"login" | "register">(currentUser ? "login" : "login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -58,9 +58,7 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
             {cart.length > 0 && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <p className="text-sm font-medium text-amber-800">Sepetinde {cart.length} ürün var</p>
-                <button onClick={() => { placeOrder(); alert("Sipariş alındı!"); }} className="mt-2 rounded-full bg-amber-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">
-                  Siparişi Tamamla
-                </button>
+                <p className="mt-1 text-[10px] text-amber-600">Siparişini sepetten tamamlayabilirsin (adres bilgisi gerekli)</p>
               </div>
             )}
 

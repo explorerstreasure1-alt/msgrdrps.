@@ -7,6 +7,7 @@ import {
   type DiscountCode,
   type Message,
   type Auction,
+  type Order,
 } from "../lib/store";
 import { Stars } from "./Stars";
 import ImageDropzone from "./ImageDropzone";
@@ -1663,7 +1664,7 @@ function SettingsTab() {
 
 /* -------- Auctions -------- */
 function AuctionsTab({ onContact }: { onContact?: (userId: string, userName: string) => void }) {
-  const { products, auctions, bids, createAuction, acceptBid, rejectBid, cancelAuction, getAuctionBids, addToast } = useStore();
+  const { products, auctions, createAuction, acceptBid, rejectBid, cancelAuction, getAuctionBids } = useStore();
   const [draftProductId, setDraftProductId] = useState("");
   const [draftPrice, setDraftPrice] = useState(100);
   const [draftHours, setDraftHours] = useState(48);
@@ -1681,8 +1682,6 @@ function AuctionsTab({ onContact }: { onContact?: (userId: string, userName: str
     setDraftPrice(100);
     setDraftHours(48);
   };
-
-  const now = Date.now();
 
   return (
     <div className="space-y-6">
@@ -1760,7 +1759,6 @@ function AuctionsTab({ onContact }: { onContact?: (userId: string, userName: str
         {activeAuctions.map((a) => {
           const product = products.find((p) => p.id === a.productId);
           const abids = getAuctionBids(a.id);
-          const isExpired = a.status === "active" && now > a.endTime;
           return (
             <div key={a.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
               <div className="flex items-start gap-4">
@@ -1895,7 +1893,7 @@ function AuctionsTab({ onContact }: { onContact?: (userId: string, userName: str
 
 /* -------- Çark & Ödüller -------- */
 function WheelTab() {
-  const { products, spinPrizes, userCoupons, userGifts, users, addUserCoupon, addPoints, setFastShipping, currentUser, addToast, giftProductId, setGiftProductId } = useStore();
+  const { products, spinPrizes, userCoupons, userGifts, users, addUserCoupon, addPoints, setFastShipping, addToast, giftProductId, setGiftProductId } = useStore();
   const [manualUserId, setManualUserId] = useState("");
   const [manualPoints, setManualPoints] = useState(100);
   const [manualDiscount, setManualDiscount] = useState(10);
@@ -1904,7 +1902,6 @@ function WheelTab() {
   const allGifts = userGifts;
   const usedCoupons = allCoupons.filter((c) => c.used);
   const activeCoupons = allCoupons.filter((c) => !c.used);
-  const claimedGifts = allGifts.filter((g) => g.claimed);
   const unclaimedGifts = allGifts.filter((g) => !g.claimed);
 
   const cardClass = "rounded-2xl border border-stone-200 bg-white p-5 shadow-sm";
@@ -2107,9 +2104,102 @@ function Field({
   );
 }
 
+/* -------- Siparişler -------- */
+function OrdersTab() {
+  const { orders, updateOrderStatus, products } = useStore();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const statusFlow: Order["status"][] = ["pending", "paid", "shipped", "delivered"];
+  const statusLabels: Record<Order["status"], string> = {
+    pending: "Bekliyor", paid: "Ödendi", shipped: "Kargoda", delivered: "Teslim Edildi"
+  };
+  const statusColors: Record<Order["status"], string> = {
+    pending: "bg-amber-500", paid: "bg-blue-500", shipped: "bg-emerald-500", delivered: "bg-stone-500"
+  };
+
+  const nextStatus = (current: Order["status"]): Order["status"] | null => {
+    const idx = statusFlow.indexOf(current);
+    return idx < statusFlow.length - 1 ? statusFlow[idx + 1] : null;
+  };
+
+  return (
+    <div>
+      <h2 className="font-elegant text-xl text-stone-800 mb-4">Siparişler ({orders.length})</h2>
+      {orders.length === 0 ? (
+        <p className="text-sm text-stone-400">Henüz sipariş yok.</p>
+      ) : (
+        <div className="space-y-3">
+          {[...orders].sort((a, b) => b.date - a.date).map((o) => (
+            <div key={o.id} className="rounded-xl border border-stone-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-stone-400">#{o.id}</p>
+                  <p className="text-xs text-stone-500">{new Date(o.date).toLocaleString("tr-TR")}</p>
+                </div>
+                <span className={"rounded-full px-3 py-1 text-[11px] font-semibold text-white " + statusColors[o.status]}>
+                  {statusLabels[o.status]}
+                </span>
+              </div>
+              <div className="mt-2 text-sm text-stone-700">
+                {o.items.length} ürün · ₺{o.total.toLocaleString("tr-TR")}
+                {o.shippingAddress && (
+                  <span className="ml-2 text-xs text-stone-400">→ {o.shippingAddress.city}</span>
+                )}
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                {nextStatus(o.status) && (
+                  <button
+                    onClick={() => updateOrderStatus(o.id, nextStatus(o.status)!)}
+                    className="rounded-full bg-stone-800 px-3 py-1 text-[11px] font-medium text-white hover:bg-stone-700"
+                  >
+                    → {statusLabels[nextStatus(o.status)!]}
+                  </button>
+                )}
+                <button
+                  onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                  className="text-[11px] text-stone-500 underline underline-offset-2 hover:text-stone-700"
+                >
+                  {expandedId === o.id ? "Gizle" : "Detay"}
+                </button>
+              </div>
+              {expandedId === o.id && (
+                <div className="mt-3 space-y-2 border-t border-stone-100 pt-3 text-xs text-stone-600">
+                  <div>
+                    <p className="font-medium text-stone-700 mb-1">Ürünler:</p>
+                    {o.items.map((item, i) => {
+                      const p = products.find((x) => x.id === item.productId);
+                      return (
+                        <div key={i} className="flex items-center gap-2 py-1">
+                          {p?.images[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover bg-stone-100" />}
+                          <span className="flex-1">{item.name} × {item.quantity}</span>
+                          <span className="font-medium">₺{item.price * item.quantity}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div>
+                    <p className="font-medium text-stone-700 mb-1">Teslimat:</p>
+                    <p>{o.shippingAddress.name} · {o.shippingAddress.phone}</p>
+                    <p>{o.shippingAddress.address}, {o.shippingAddress.district}/{o.shippingAddress.city}</p>
+                  </div>
+                  {o.couponUsed && <p>Kupon: {o.couponUsed}</p>}
+                  {o.pointsUsed && <p>Puan harcandı: {o.pointsUsed}</p>}
+                  {o.fastShippingUsed && <p>🚀 Hızlı gönderim</p>}
+                  {o.giftClaimed && <p>🎁 Hediye: {o.giftClaimed}</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- Shell ---------------- */
 const TABS = [
   { id: "products", label: "Ürünler" },
+  { id: "orders", label: "Siparişler" },
   { id: "auctions", label: "Açık Artırma" },
   { id: "wheel", label: "Çark & Ödüller" },
   { id: "statistics", label: "İstatistikler" },
@@ -2124,23 +2214,77 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     () => sessionStorage.getItem("msgrdrps_admin") === "1"
   );
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("products");
-  const { conversations, settings, ensureConversation, sendMessage } = useStore();
+  const { conversations, settings, ensureConversation, sendMessage, addProduct, addToast, updateSettings } = useStore();
   const unread = conversations.reduce((s, c) => s + c.unreadByAdmin, 0);
 
   // Auto-sync timer
   useEffect(() => {
     if (!settings.autoSync) return;
-    const id = setInterval(async () => {
+    let running = true;
+    const sync = async () => {
       try {
-        await fetch("/api/scrape-gardrops-store", {
+        const res = await fetch("/api/scrape-gardrops-store", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: settings.gardropsUrl }),
         });
+        if (!res.ok) return;
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let currentEvent = "";
+        let imported = 0;
+        while (running) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() || "";
+          for (const part of parts) {
+            if (!part) continue;
+            const lines = part.split("\n");
+            let dataLine = "";
+            for (const line of lines) {
+              if (line.startsWith("event: ")) currentEvent = line.slice(7);
+              else if (line.startsWith("data: ")) dataLine = line.slice(6);
+            }
+            if (!dataLine) continue;
+            try {
+              const ev = JSON.parse(dataLine);
+              if (currentEvent === "product") {
+                const d = ev.product;
+                addProduct({
+                  id: Math.random().toString(36).slice(2, 10),
+                  name: d.name || "",
+                  price: d.price || "",
+                  priceNum: d.priceNum || 0,
+                  originalPriceNum: d.originalPriceNum || 0,
+                  originalPrice: d.originalPrice || "",
+                  discount: d.discount || 0,
+                  hasDiscount: d.hasDiscount || false,
+                  category: d.category || "",
+                  description: d.description || "",
+                  images: d.images || [],
+                  gardropsUrl: d.gardropsUrl || "",
+                  condition: d.condition || "new",
+                  status: "active" as const,
+                  stock: 1,
+                  gifts: [],
+                  shop: settings.shops?.[0]?.name || "msgrdrps",
+                });
+                imported++;
+              } else if (currentEvent === "done") {
+                updateSettings({ ...settings, lastSyncTimestamp: Date.now() });
+              }
+            } catch {}
+          }
+        }
+        if (imported > 0) addToast(`${imported} ürün senkronize edildi (otomatik)`, "success");
       } catch {}
-    }, settings.syncIntervalMs);
-    return () => clearInterval(id);
-  }, [settings.autoSync, settings.syncIntervalMs, settings.gardropsUrl]);
+    };
+    const id = setInterval(sync, settings.syncIntervalMs);
+    return () => { running = false; clearInterval(id); };
+  }, [settings.autoSync, settings.syncIntervalMs, settings.gardropsUrl, addProduct, addToast, updateSettings]);
 
   if (!authed)
     return (
@@ -2213,6 +2357,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
         </div>
 
         {tab === "products" && <ProductsTab />}
+        {tab === "orders" && <OrdersTab />}
         {tab === "auctions" && <AuctionsTab onContact={(userId, userName) => { ensureConversation(userId, userName); sendMessage(userId, "admin", "Açık artırma teklifiniz kabul edildi. İletişime geçmek için yazın."); setTab("messages"); }} />}
         {tab === "wheel" && <WheelTab />}
         {tab === "statistics" && <StatsTab />}
