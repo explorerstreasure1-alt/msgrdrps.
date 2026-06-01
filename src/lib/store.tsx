@@ -1,0 +1,739 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { ToastMsg } from "../components/Toast";
+
+/* ---------------------------- Types ---------------------------- */
+
+export interface Product {
+  id: string;
+  name: string;
+  price: string;
+  priceNum: number;
+  originalPriceNum?: number; // Eski fiyat (üstü çizili gösterilecek)
+  originalPrice?: string;
+  discount?: number; // Uygulanan indirim oranı (%)
+  hasDiscount?: boolean; // Indirim aktif mi
+  category: string;
+  description: string;
+  images: string[];
+  gardropsUrl: string;
+  condition: "new" | "second"; // 0 = yeni, 2 = ikinci el
+  status: "active" | "out"; // active / stokta yok
+  stock: number;
+  gifts: Gift[];
+  shop?: string; // mağaza adı (çoklu mağaza için)
+}
+
+export interface Gift {
+  id: string;
+  title: string;
+  image?: string;
+  stock: number;
+}
+
+export interface Review {
+  id: string;
+  author: string;
+  rating: number;
+  text: string;
+  date: string;
+}
+
+export interface Message {
+  id: string;
+  sender: "customer" | "admin" | "system";
+  text: string;
+  attachments?: { type: "image" | "file" | "link"; url: string; label?: string }[];
+  time: number;
+}
+
+export interface Conversation {
+  id: string;
+  name: string;
+  messages: Message[];
+  unreadByAdmin: number;
+  lastActive: number;
+  blocked: boolean;
+  seenByAdmin: boolean;
+}
+
+export interface DiscountCode {
+  id: string;
+  code: string;
+  minQuantity: number;
+  percentage: number;
+  description: string;
+  active: boolean;
+}
+
+export interface Settings {
+  gardropsUrl: string;
+  autoWelcome: string;
+  autoSync: boolean;
+  syncIntervalMs: number;
+  lastSyncTimestamp: number;
+  shops: { name: string; url: string }[];
+}
+
+/* ------------------------- Defaults --------------------------- */
+
+const GARDROPS_DEFAULT = "https://www.gardrops.com/msgrdrps";
+
+const DEFAULT_SETTINGS: Settings = {
+  gardropsUrl: GARDROPS_DEFAULT,
+  autoSync: false,
+  syncIntervalMs: 6 * 60 * 60 * 1000,
+  lastSyncTimestamp: 0,
+  shops: [{ name: "msgrdrps", url: GARDROPS_DEFAULT }],
+  autoWelcome:
+    "Hoş geldin 🤎\n\n• Ürünleriniz yayından sonra size özel olarak Gardrops hesabımız üzerinden ilan açılacak. Size özel ilan açabilmemiz için isminizi ve soy isminizi bizimle paylaşmayı ve aldığınız ürünlerin görsellerini bizimle paylaşmayı unutmayın!\n\n• Açılan ilan üzerinden satın alma işlemi yapabilirsiniz.\n\n• Gardrops: " +
+    GARDROPS_DEFAULT +
+    "\n\n• İade kabul etmiyoruz ✕",
+};
+
+const DEFAULT_PRODUCTS: Product[] = [
+  {
+    id: "p0",
+    name: "Pembe Kadife Ceket",
+    price: "₺399",
+    priceNum: 399,
+    originalPriceNum: 699,
+    originalPrice: "₺699",
+    discount: 43,
+    hasDiscount: true,
+    category: "Üst Giyim",
+    description:
+      "Yumuşacık kadife dokulu, zarif pembe ceket. %43 indirimle kaçırmayın!",
+    images: [
+      "https://images.pexels.com/photos/5103822/pexels-photo-5103822.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "new",
+    status: "active",
+    stock: 7,
+    gifts: [
+      { id: "g0", title: "Pembe Kılıf", stock: 5 },
+    ],
+  },
+  {
+    id: "p1",
+    name: "Bej Oversize Blazer Ceket",
+    price: "₺549",
+    priceNum: 549,
+    category: "Üst Giyim",
+    description:
+      "Yumuşak dokulu, rahat kalıplı bej blazer ceket. Hem ofis hem günlük şıklık.",
+    images: [
+      "https://images.pexels.com/photos/31071833/pexels-photo-31071833.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "new",
+    status: "active",
+    stock: 8,
+    gifts: [
+      { id: "g1", title: "Kumaş Bakım Seti", stock: 5 },
+      { id: "g2", title: "Aksesuar Kılıfı", stock: 3 },
+    ],
+  },
+  {
+    id: "p2",
+    name: "Fil Dişi Triko Hırka",
+    price: "₺389",
+    priceNum: 389,
+    category: "Triko",
+    description:
+      "Sıcacık fil dişi rengi örgü hırka. Sonbahar ve kış kombinlerinin vazgeçilmezi.",
+    images: [
+      "https://images.pexels.com/photos/9603626/pexels-photo-9603626.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "new",
+    status: "active",
+    stock: 12,
+    gifts: [],
+  },
+  {
+    id: "p3",
+    name: "Krem Saten Gömlek",
+    price: "₺299",
+    priceNum: 299,
+    category: "Gömlek",
+    description: "Dökümlü saten kumaş, zarif krem tonu. Şık bir duruş için ideal.",
+    images: [
+      "https://images.pexels.com/photos/5418894/pexels-photo-5418894.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "second",
+    status: "active",
+    stock: 3,
+    gifts: [{ id: "g3", title: "Astar Bezi", stock: 0 }],
+  },
+  {
+    id: "p4",
+    name: "Bej Tulum",
+    price: "₺459",
+    priceNum: 459,
+    category: "Tulum",
+    description: "Modern kesim bej tulum. Tek parça ile tamamlanmış zarif kombin.",
+    images: [
+      "https://images.pexels.com/photos/8484085/pexels-photo-8484085.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "new",
+    status: "active",
+    stock: 5,
+    gifts: [{ id: "g4", title: "Kemer Hediyesi", stock: 4 }],
+  },
+  {
+    id: "p5",
+    name: "Bej Deri El Çantası",
+    price: "₺349",
+    priceNum: 349,
+    category: "Aksesuar",
+    description: "Zarif bej tonlu el çantası. Her kombini tamamlayan şık aksesuar.",
+    images: [
+      "https://images.pexels.com/photos/8989582/pexels-photo-8989582.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "second",
+    status: "active",
+    stock: 2,
+    gifts: [],
+  },
+  {
+    id: "p6",
+    name: "Nötr Tonlu İkili Takım",
+    price: "₺629",
+    priceNum: 629,
+    category: "Takım",
+    description: "Bej ve fil dişi tonlarında uyumlu ikili takım. Komple şıklık.",
+    images: [
+      "https://images.pexels.com/photos/8483812/pexels-photo-8483812.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+    ],
+    gardropsUrl: GARDROPS_DEFAULT,
+    condition: "new",
+    status: "active",
+    stock: 6,
+    gifts: [{ id: "g5", title: "Mini Şal", stock: 7 }],
+  },
+];
+
+const DEFAULT_REVIEWS: Review[] = [
+  {
+    id: "r1",
+    author: "elif_k",
+    rating: 5,
+    text: "Ürün birebir aynısı geldi, kumaş kalitesi harika. Çok teşekkürler! 🤎",
+    date: "2 hafta önce",
+  },
+  {
+    id: "r2",
+    author: "zeynepm",
+    rating: 5,
+    text: "Hızlı kargo, ilgili satıcı. Gardrops üzerinden alışveriş çok kolaydı.",
+    date: "1 ay önce",
+  },
+  {
+    id: "r3",
+    author: "merve.style",
+    rating: 5,
+    text: "Bej blazer tam istediğim gibiydi. Kesinlikle tekrar alışveriş yapacağım!",
+    date: "1 ay önce",
+  },
+  {
+    id: "r4",
+    author: "ayca_d",
+    rating: 5,
+    text: "Renkler çok zarif, fotoğraftakiyle aynı. Teşekkürler güvenilir satıcı.",
+    date: "2 ay önce",
+  },
+];
+
+const DEFAULT_DISCOUNTS: DiscountCode[] = [
+  {
+    id: "d1",
+    code: "MS3",
+    minQuantity: 3,
+    percentage: 10,
+    description: "3 ve üstü ürünlerde %10 indirim",
+    active: true,
+  },
+  {
+    id: "d2",
+    code: "MS5",
+    minQuantity: 5,
+    percentage: 15,
+    description: "5 ve üstü ürünlerde %15 indirim",
+    active: true,
+  },
+];
+
+/* ----------------------- localStorage hook -------------------- */
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
+function save<T>(key: string, value: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+const K = {
+  products: "msgrdrps_products_v2",
+  reviews: "msgrdrps_reviews",
+  settings: "msgrdrps_settings",
+  convos: "msgrdrps_convos_v2",
+  discounts: "msgrdrps_discounts",
+  customerId: "msgrdrps_customer_id",
+  favorites: "msgrdrps_favorites",
+  cart: "msgrdrps_cart",
+  compare: "msgrdrps_compare",
+};
+
+/* ------------------------- Account --------------------------- */
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  orderIds: string[];
+}
+
+export interface Order {
+  id: string;
+  items: { productId: string; quantity: number; price: number; name: string }[];
+  total: number;
+  date: number;
+  status: "pending" | "paid" | "shipped" | "delivered";
+}
+
+export interface SpinPrize {
+  id: string;
+  prize: string;
+  label: string;
+  date: number;
+}
+
+/* --------------------------- Context -------------------------- */
+
+interface CartItem {
+  productId: string;
+  quantity: number;
+  giftId?: string;
+}
+
+interface StoreCtx {
+  products: Product[];
+  reviews: Review[];
+  settings: Settings;
+  conversations: Conversation[];
+  discounts: DiscountCode[];
+  customerId: string;
+  favorites: string[];
+  cart: CartItem[];
+  // products
+  addProduct: (p: Product) => void;
+  updateProduct: (p: Product) => void;
+  removeProduct: (id: string) => void;
+  // reviews
+  addReview: (r: Review) => void;
+  updateReview: (r: Review) => void;
+  removeReview: (id: string) => void;
+  // discounts
+  addDiscount: (d: DiscountCode) => void;
+  updateDiscount: (d: DiscountCode) => void;
+  removeDiscount: (id: string) => void;
+  // settings
+  updateSettings: (s: Settings) => void;
+  // messaging
+  sendMessage: (
+    convoId: string,
+    sender: "customer" | "admin" | "system",
+    text: string,
+    name?: string,
+    attachments?: Message["attachments"]
+  ) => void;
+  markRead: (convoId: string) => void;
+  setSeen: (convoId: string, value: boolean) => void;
+  toggleBlock: (convoId: string) => void;
+  ensureConversation: (id: string, name: string) => void;
+  // account
+  currentUser: User | null;
+  orders: Order[];
+  register: (name: string, email: string, password: string) => User | null;
+  login: (email: string, password: string) => User | null;
+  logout: () => void;
+  placeOrder: () => void;
+  // favorites & cart
+  toggleFavorite: (id: string) => void;
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+  // comparison
+  compareIds: string[];
+  toggleCompare: (id: string) => void;
+  // spin wheel
+  spinPrizes: SpinPrize[];
+  lastSpinDate: string;
+  addSpinPrize: (p: SpinPrize) => void;
+  setLastSpinDate: (d: string) => void;
+  // toasts
+  toasts: ToastMsg[];
+  addToast: (text: string, type?: ToastMsg["type"]) => void;
+  dismissToast: (id: string) => void;
+}
+
+const Ctx = createContext<StoreCtx | null>(null);
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [products, setProducts] = useState<Product[]>(() =>
+    load(K.products, DEFAULT_PRODUCTS)
+  );
+  const [reviews, setReviews] = useState<Review[]>(() =>
+    load(K.reviews, DEFAULT_REVIEWS)
+  );
+  const [settings, setSettings] = useState<Settings>(() =>
+    load(K.settings, DEFAULT_SETTINGS)
+  );
+  const [conversations, setConversations] = useState<Conversation[]>(() =>
+    load(K.convos, [])
+  );
+  const [discounts, setDiscounts] = useState<DiscountCode[]>(() =>
+    load(K.discounts, DEFAULT_DISCOUNTS)
+  );
+  const [customerId] = useState<string>(() => {
+    let id = load<string>(K.customerId, "");
+    if (!id) {
+      id = "musteri-" + uid();
+      save(K.customerId, id);
+    }
+    return id;
+  });
+  const [favorites, setFavorites] = useState<string[]>(() => load(K.favorites, []));
+  const [compareIds, setCompareIds] = useState<string[]>(() => load(K.compare, []));
+  const [cart, setCart] = useState<CartItem[]>(() => load(K.cart, []));
+  const [currentUser, setCurrentUser] = useState<User | null>(() => load("currentUser", null));
+  const [users, setUsers] = useState<User[]>(() => load("users", []));
+  const [orders, setOrders] = useState<Order[]>(() => load("orders", []));
+  const [spinPrizes, setSpinPrizes] = useState<SpinPrize[]>(() => load("spinPrizes", []));
+  const [lastSpinDate, setLastSpinDate] = useState<string>(() => load("lastSpinDate", ""));
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+
+  useEffect(() => save(K.products, products), [products]);
+  useEffect(() => save(K.reviews, reviews), [reviews]);
+  useEffect(() => save(K.settings, settings), [settings]);
+  useEffect(() => save(K.convos, conversations), [conversations]);
+  useEffect(() => save(K.discounts, discounts), [discounts]);
+  useEffect(() => save(K.favorites, favorites), [favorites]);
+  useEffect(() => save(K.compare, compareIds), [compareIds]);
+  useEffect(() => save(K.cart, cart), [cart]);
+  useEffect(() => save("currentUser", currentUser), [currentUser]);
+  useEffect(() => save("users", users), [users]);
+  useEffect(() => save("orders", orders), [orders]);
+  useEffect(() => save("spinPrizes", spinPrizes), [spinPrizes]);
+  useEffect(() => save("lastSpinDate", lastSpinDate), [lastSpinDate]);
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === K.convos && e.newValue) setConversations(JSON.parse(e.newValue));
+      if (e.key === K.products && e.newValue) setProducts(JSON.parse(e.newValue));
+      if (e.key === K.reviews && e.newValue) setReviews(JSON.parse(e.newValue));
+      if (e.key === K.settings && e.newValue) setSettings(JSON.parse(e.newValue));
+      if (e.key === K.discounts && e.newValue) setDiscounts(JSON.parse(e.newValue));
+      if (e.key === K.cart && e.newValue) setCart(JSON.parse(e.newValue));
+      if (e.key === K.favorites && e.newValue) setFavorites(JSON.parse(e.newValue));
+      if (e.key === K.compare && e.newValue) setCompareIds(JSON.parse(e.newValue));
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  const addProduct = (p: Product) => setProducts((prev) => [p, ...prev]);
+  const updateProduct = (p: Product) =>
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+  const removeProduct = (id: string) =>
+    setProducts((prev) => prev.filter((x) => x.id !== id));
+
+  const addReview = (r: Review) => setReviews((prev) => [r, ...prev]);
+  const updateReview = (r: Review) =>
+    setReviews((prev) => prev.map((x) => (x.id === r.id ? r : x)));
+  const removeReview = (id: string) =>
+    setReviews((prev) => prev.filter((x) => x.id !== id));
+
+  const addDiscount = (d: DiscountCode) => setDiscounts((prev) => [...prev, d]);
+  const updateDiscount = (d: DiscountCode) =>
+    setDiscounts((prev) => prev.map((x) => (x.id === d.id ? d : x)));
+  const removeDiscount = (id: string) =>
+    setDiscounts((prev) => prev.filter((x) => x.id !== id));
+
+  const updateSettings = (s: Settings) => setSettings(s);
+
+  const ensureConversation = (id: string, name: string) => {
+    setConversations((prev) => {
+      if (prev.some((c) => c.id === id)) return prev;
+      const welcome: Message = {
+        id: uid(),
+        sender: "system",
+        text: settings.autoWelcome,
+        time: Date.now(),
+      };
+      return [
+        {
+          id,
+          name,
+          messages: [welcome],
+          unreadByAdmin: 0,
+          lastActive: Date.now(),
+          blocked: false,
+          seenByAdmin: true,
+        },
+        ...prev,
+      ];
+    });
+  };
+
+  const sendMessage: StoreCtx["sendMessage"] = (
+    convoId,
+    sender,
+    text,
+    name,
+    attachments
+  ) => {
+    setConversations((prev) => {
+      const exists = prev.find((c) => c.id === convoId);
+      const msg: Message = {
+        id: uid(),
+        sender,
+        text,
+        attachments: attachments || [],
+        time: Date.now(),
+      };
+      if (!exists) {
+        const welcome: Message = {
+          id: uid(),
+          sender: "system",
+          text: settings.autoWelcome,
+          time: Date.now() - 1,
+        };
+        return [
+          {
+            id: convoId,
+            name: name || "Müşteri",
+            messages: [welcome, msg],
+            unreadByAdmin: sender === "customer" ? 1 : 0,
+            lastActive: Date.now(),
+            blocked: false,
+            seenByAdmin: sender !== "customer",
+          },
+          ...prev,
+        ];
+      }
+      if (exists.blocked && sender === "customer") {
+        // still keep customer messages but mark admin block message
+        return prev;
+      }
+      return prev.map((c) =>
+        c.id === convoId
+          ? {
+              ...c,
+              name: name || c.name,
+              messages: [...c.messages, msg],
+              unreadByAdmin:
+                sender === "customer" ? c.unreadByAdmin + 1 : c.unreadByAdmin,
+              lastActive: Date.now(),
+              seenByAdmin: sender !== "customer" ? c.seenByAdmin : false,
+            }
+          : c
+      );
+    });
+  };
+
+  const markRead = (convoId: string) =>
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convoId ? { ...c, unreadByAdmin: 0, seenByAdmin: true } : c))
+    );
+
+  const setSeen = (convoId: string, value: boolean) =>
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convoId ? { ...c, seenByAdmin: value, unreadByAdmin: value ? 0 : c.unreadByAdmin } : c))
+    );
+
+  const toggleBlock = (convoId: string) =>
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convoId
+          ? {
+              ...c,
+              blocked: !c.blocked,
+              messages: [
+                ...c.messages,
+                {
+                  id: uid(),
+                  sender: "system",
+                  text: !c.blocked
+                    ? "Müşteri engellendi — bu müşteri artık mesaj gönderemez."
+                    : "Müşteri engeli kaldırıldı.",
+                  time: Date.now(),
+                },
+              ],
+            }
+          : c
+      )
+    );
+
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    addToast("Beğenilere eklendi", "success");
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 4 ? [...prev, id] : prev
+    );
+    addToast("Karşılaştırmaya eklendi", "info");
+  };
+
+  const addSpinPrize = (p: SpinPrize) => setSpinPrizes((prev) => [p, ...prev]);
+
+  const addToast = (text: string, type: ToastMsg["type"] = "info") => {
+    const id = Math.random().toString(36).slice(2, 9);
+    setToasts((prev) => [...prev, { id, text, type }]);
+  };
+  const dismissToast = (id: string) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+
+  const addToCart = (item: CartItem) => {
+    setCart((prev) => {
+      const existing = prev.find((x) => x.productId === item.productId);
+      if (existing) {
+        return prev.map((x) =>
+          x.productId === item.productId
+            ? { ...x, quantity: x.quantity + item.quantity, giftId: item.giftId || x.giftId }
+            : x
+        );
+      }
+      return [...prev, item];
+    });
+    addToast("Sepete eklendi", "success");
+  };
+
+  const removeFromCart = (id: string) =>
+    setCart((prev) => prev.filter((x) => x.productId !== id));
+
+  const clearCart = () => setCart([]);
+
+  const register = (name: string, email: string, password: string): User | null => {
+    if (users.find((u) => u.email === email)) return null;
+    const user: User = { id: uid(), name, email, password, orderIds: [] };
+    setUsers((prev) => [...prev, user]);
+    setCurrentUser(user);
+    return user;
+  };
+
+  const login = (email: string, password: string): User | null => {
+    const user = users.find((u) => u.email === email && u.password === password);
+    if (!user) return null;
+    setCurrentUser(user);
+    return user;
+  };
+
+  const logout = () => setCurrentUser(null);
+
+  const placeOrder = () => {
+    if (!currentUser || cart.length === 0) return;
+    const items = cart
+      .map((ci) => {
+        const p = products.find((x) => x.id === ci.productId);
+        if (!p) return null;
+        return { productId: ci.productId, quantity: ci.quantity, price: p.priceNum, name: p.name };
+      })
+      .filter(Boolean) as Order["items"];
+    const order: Order = { id: uid(), items, total: items.reduce((s, i) => s + i.price * i.quantity, 0), date: Date.now(), status: "pending" };
+    setOrders((prev) => [...prev, order]);
+    setCurrentUser((prev) => prev ? { ...prev, orderIds: [...prev.orderIds, order.id] } : prev);
+    setUsers((prev) => prev.map((u) => u.id === currentUser.id ? { ...u, orderIds: [...u.orderIds, order.id] } : u));
+    setCart([]);
+    addToast("Sipariş alındı!", "success");
+  };
+
+  return (
+    <Ctx.Provider
+      value={{
+        products,
+        reviews,
+        settings,
+        conversations,
+        discounts,
+        customerId,
+        favorites,
+        cart,
+        currentUser,
+        orders,
+        register,
+        login,
+        logout,
+        placeOrder,
+        addProduct,
+        updateProduct,
+        removeProduct,
+        addReview,
+        updateReview,
+        removeReview,
+        addDiscount,
+        updateDiscount,
+        removeDiscount,
+        updateSettings,
+        sendMessage,
+        markRead,
+        setSeen,
+        toggleBlock,
+        ensureConversation,
+        toggleFavorite,
+        toggleCompare,
+        compareIds,
+        addSpinPrize,
+        spinPrizes,
+        lastSpinDate,
+        setLastSpinDate,
+        toasts,
+        addToast,
+        dismissToast,
+        addToCart,
+        removeFromCart,
+        clearCart,
+      }}
+    >
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useStore() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useStore must be used within StoreProvider");
+  return ctx;
+}
+
+export { uid, GARDROPS_DEFAULT };

@@ -1,0 +1,14 @@
+{
+  "name": "MSgrdrps — Bej & Fil Dişi Giyim Mağazası",
+  "short_name": "MSgrdrps",
+  "description": "Gardrops entegreli bej ve fil dişi giyim mağazası",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f1e7",
+  "theme_color": "#44403c",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/logo-admin.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

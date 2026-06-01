@@ -1,0 +1,672 @@
+import { useMemo, useRef, useState } from "react";
+import { useStore, type Product } from "../lib/store";
+import { Stars } from "./Stars";
+import ChatWidget from "./ChatWidget";
+import ProductCard from "./ProductCard";
+import ProductDetailPanel from "./ProductDetailPanel";
+import CartPanel from "./CartPanel";
+import AccountPanel from "./AccountPanel";
+import ComparePanel from "./ComparePanel";
+import SpinWheel from "./SpinWheel";
+import { Toast } from "./Toast";
+import logoSrc from "../logo.png";
+
+type ConditionFilter = "all" | "new" | "second";
+
+function TopBar() {
+  return (
+    <div className="bg-stone-800 py-2 text-center">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 text-xs tracking-wide text-stone-200">
+        <span className="hidden sm:inline">🚚</span>
+        <span>Ücretsiz Kargo</span>
+        <span className="h-3 w-px bg-stone-500 hidden sm:inline"></span>
+        <span className="hidden sm:inline">🛍️</span>
+        <span>Gardrops üzerinden güvenli alışveriş</span>
+        <span className="h-3 w-px bg-stone-500 hidden sm:inline"></span>
+        <span className="hidden sm:inline">⚠️</span>
+        <span>İade kabul edilmez</span>
+      </div>
+    </div>
+  );
+}
+
+function CartButton({ onClick, count }: { onClick: () => void; count: number }) {
+  return (
+    <button
+      onClick={onClick}
+      className="relative flex items-center gap-2 rounded-full border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="21" r="1" />
+        <circle cx="19" cy="21" r="1" />
+        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+      </svg>
+      <span className="hidden sm:inline">Sepet</span>
+      {count > 0 && (
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function Logo() {
+  return (
+    <a href="/" className="flex items-center">
+      <img
+        src={logoSrc}
+        alt="MSgrdrps"
+        className="h-50 w-auto object-contain"
+      />
+    </a>
+  );
+}
+
+function Hero() {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = cardRef.current!.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setPos({ x, y });
+    const rotX = (y - 0.5) * -30;
+    const rotY = (x - 0.5) * 30;
+    cardRef.current!.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.02,1.02,1.02)`;
+    if (glowRef.current) {
+      glowRef.current.style.background = `radial-gradient(circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.3) 0%, transparent 60%)`;
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setPos({ x: 0.5, y: 0.5 });
+    if (cardRef.current) cardRef.current.style.transform = "rotateX(0deg) rotateY(0deg) scale3d(1,1,1)";
+    if (glowRef.current) glowRef.current.style.background = "";
+  };
+
+  return (
+    <section className="relative overflow-hidden">
+      {/* Decorative background blobs */}
+      <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-200/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-stone-300/20 blur-3xl" />
+
+      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 lg:grid-cols-2 lg:py-16">
+        <div className="space-y-6" data-aos="fade-right">
+          <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em]">
+            ⋆ Yeni Sezon ⋆
+          </div>
+          <p className="text-base uppercase tracking-[0.3em] text-amber-700">
+            Bej & Fil Dişi Koleksiyon
+          </p>
+          <h1 className="font-elegant text-5xl leading-tight text-stone-800 lg:text-7xl">
+            Zarif Giyimin <br /> Sıcak Tonları
+          </h1>
+          <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
+            Nötr renklerde, zamansız parçalar. Sıfır ve ikinci el seçenekleri,
+            hediyeler ve çoklu ürün indirimleri ile en profesyonel alışveriş
+            deneyimi.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <a href="#urunler" className="group relative overflow-hidden rounded-full bg-stone-800 px-8 py-4 text-base font-medium text-white shadow-lg shadow-stone-800/20 transition-all hover:shadow-xl hover:shadow-stone-800/30 hover:-translate-y-0.5">
+              <span className="relative z-10">Alışverişe Başla</span>
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-stone-700 to-stone-600 transition-transform duration-300 group-hover:translate-x-0" />
+            </a>
+            <a href="https://www.gardrops.com/msgrdrps" target="_blank" rel="noreferrer"
+               className="group flex items-center gap-2 rounded-full border-2 border-stone-800 px-8 py-4 text-base font-medium text-stone-800 transition-all hover:bg-stone-800 hover:text-white hover:-translate-y-0.5 hover:shadow-lg">
+              Gardrops Mağazamız
+            </a>
+          </div>
+          <div className="flex flex-wrap items-center gap-6 pt-4">
+            <div className="flex items-center gap-2 bg-white/60 rounded-full px-4 py-2 shadow-sm">
+              <Stars rating={5} size={22} />
+              <span className="text-base font-semibold text-stone-700">5.0</span>
+            </div>
+            <span className="text-sm text-stone-500 flex items-center gap-1.5"><span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" /> +100 mutlu müşteri</span>
+            <span className="text-sm text-stone-500 hidden sm:inline">•</span>
+            <span className="text-sm text-stone-500 hidden sm:inline flex items-center gap-1.5"><span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" /> %100 güvenli ödeme</span>
+          </div>
+        </div>
+
+        <div className="relative perspective-1000 flex items-center justify-center" style={{ perspective: "1200px" }}>
+          {/* Inner shadow / depth ring */}
+          <div className="absolute inset-0 rounded-3xl shadow-[inset_0_2px_20px_rgba(0,0,0,0.08)] pointer-events-none z-10" />
+
+          {/* Glow overlay */}
+          <div ref={glowRef} className="absolute inset-0 z-10 pointer-events-none rounded-3xl transition-all duration-100" />
+
+          {/* Shine reflection */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-none rounded-3xl opacity-0 transition-opacity duration-300"
+            style={{
+              opacity: isHovered ? 1 : 0,
+              background: `linear-gradient(${pos.x * 180}deg, rgba(255,255,255,0.25) 0%, transparent 50%, rgba(0,0,0,0.05) 100%)`,
+            }}
+          />
+
+          {/* Border gradient */}
+          <div
+            className="absolute inset-0 rounded-3xl p-[3px] transition-all duration-500"
+            style={{
+              background: isHovered
+                ? `linear-gradient(${pos.x * 360}deg, #fde68a, #fbbf24, #d4d4d4, #fde68a)`
+                : "linear-gradient(135deg, #ffffff, #e7e5e4, #ffffff)",
+            }}
+          >
+            <div className="h-full w-full rounded-[calc(1.5rem-3px)] bg-white" />
+          </div>
+
+          {/* Image card */}
+          <div
+            ref={cardRef}
+            className="relative z-0 overflow-hidden rounded-3xl shadow-2xl shadow-stone-300/40 transition-shadow duration-500"
+            style={{
+              transformStyle: "preserve-3d",
+              transition: "transform 0.2s ease-out",
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={handleMouseLeave}
+          >
+            <img
+              src="https://images.pexels.com/photos/7318681/pexels-photo-7318681.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=900"
+              alt="Koleksiyon"
+              className="aspect-[4/5] w-full object-cover"
+              style={{ transformStyle: "preserve-3d" }}
+              draggable={false}
+            />
+            {/* Bottom gradient overlay */}
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Floating decorative dots */}
+          <div className="pointer-events-none absolute -right-6 -top-6 z-20 h-12 w-12 rounded-full bg-amber-300/30 blur-sm animate-pulse" />
+          <div className="pointer-events-none absolute -bottom-4 -left-4 z-20 h-8 w-8 rounded-full bg-stone-400/20 blur-sm animate-pulse" style={{ animationDelay: "1s" }} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CategoriesStrip({ onPick }: { onPick: (c: string) => void }) {
+  const { products } = useStore();
+  const cats = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))),
+    [products]
+  );
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {cats.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => onPick(cat)}
+            className="group rounded-2xl border border-stone-200 bg-white p-4 text-center transition hover:-translate-y-1 hover:border-stone-400 hover:shadow-lg"
+          >
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#efe5d4] text-stone-700">
+              <span className="font-elegant text-sm">{cat.charAt(0)}</span>
+            </div>
+            <p className="text-xs font-medium text-stone-700">{cat}</p>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReviewSection() {
+  const { reviews } = useStore();
+  const featured = reviews.slice(0, 4);
+
+  return (
+    <section id="yorumlar" className="bg-[#efe5d4] py-14" data-aos="fade-up">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-10 text-center">
+          <p className="text-sm uppercase tracking-[0.3em] text-amber-700">
+            Gardrops Yorumları
+          </p>
+          <h2 className="mt-2 font-elegant text-4xl text-stone-800">
+            Müşterilerimiz ne diyor?
+          </h2>
+          <div className="mt-3 flex items-center justify-center gap-3">
+            <Stars rating={5} size={22} />
+            <span className="text-lg font-semibold text-stone-800">5.0</span>
+            <span className="text-sm text-stone-500">({reviews.length} yorum)</span>
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {featured.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <Stars rating={r.rating} />
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">
+                "{r.text}"
+              </p>
+              <div className="mt-4 flex items-center gap-3 border-t border-stone-100 pt-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efe5d4] text-sm font-semibold text-stone-700">
+                  {r.author.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-stone-800">
+                    @{r.author}
+                  </p>
+                  <p className="text-xs text-stone-400">{r.date}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InfoStrip() {
+  const items = [
+    { icon: "📦", title: "Hızlı Kargo", desc: "Aynı gün kargo, ücretsiz teslimat" },
+    { icon: "🎁", title: "Ücretsiz Hediye", desc: "Seçtiğiniz her ürüne özel hediye" },
+    { icon: "💎", title: "Güvenli Ödeme", desc: "Gardrops ile %100 güvenli alışveriş" },
+    { icon: "⭐", title: "Premium Kalite", desc: "Özenle seçilmiş parçalar" },
+  ];
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-12" data-aos="fade-up">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((it, i) => (
+          <div
+            key={it.title}
+            className="rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+          >
+            <div className="mb-2 text-3xl">{it.icon}</div>
+            <h3 className="font-elegant text-lg text-stone-800">{it.title}</h3>
+            <p className="mt-2 text-sm text-stone-500">{it.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function Home({ onAdmin }: { onAdmin: () => void }) {
+  const { products, cart, favorites, currentUser, settings, compareIds, toggleCompare, addToCart, toasts, dismissToast } = useStore();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [spinOpen, setSpinOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("Tümü");
+  const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
+  const [search, setSearch] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sort, setSort] = useState<"default" | "price-asc" | "price-desc" | "discount">(
+    "default"
+  );
+  const [shopFilter, setShopFilter] = useState("all");
+
+  const categories = useMemo(
+    () => ["Tümü", ...Array.from(new Set(products.map((p) => p.category)))],
+    [products]
+  );
+
+  const filteredProducts = useMemo(() => {
+    let list = products.filter((p) => {
+      if (activeCategory !== "Tümü" && p.category !== activeCategory) return false;
+      if (conditionFilter === "new" && p.condition !== "new") return false;
+      if (conditionFilter === "second" && p.condition !== "second") return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (
+          !p.name.toLowerCase().includes(q) &&
+          !p.description.toLowerCase().includes(q) &&
+          !p.category.toLowerCase().includes(q)
+        )
+          return false;
+      }
+      if (priceMin && p.priceNum < parseInt(priceMin)) return false;
+      if (priceMax && p.priceNum > parseInt(priceMax)) return false;
+      if (shopFilter !== "all" && (p.shop || "msgrdrps") !== shopFilter) return false;
+      return true;
+    });
+
+    if (sort === "price-asc") list = [...list].sort((a, b) => a.priceNum - b.priceNum);
+    else if (sort === "price-desc") list = [...list].sort((a, b) => b.priceNum - a.priceNum);
+    else if (sort === "discount") {
+      list = [...list].sort((a, b) => {
+        const da = a.hasDiscount && a.originalPriceNum ? (a.originalPriceNum - a.priceNum) / a.originalPriceNum : 0;
+        const db = b.hasDiscount && b.originalPriceNum ? (b.originalPriceNum - b.priceNum) / b.originalPriceNum : 0;
+        return db - da;
+      });
+    }
+    return list;
+  }, [products, activeCategory, conditionFilter, search, sort, priceMin, priceMax, shopFilter]);
+
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+
+  const handleOpenProduct = (product: Product) => {
+    setSelectedProduct(product);
+    document.body.style.overflow = "hidden";
+  };
+  const handleCloseProduct = () => {
+    setSelectedProduct(null);
+    document.body.style.overflow = "";
+  };
+  const handleOpenCart = () => {
+    setCartOpen(true);
+    document.body.style.overflow = "hidden";
+  };
+  const handleCloseCart = () => {
+    setCartOpen(false);
+    document.body.style.overflow = "";
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f7f1e7] text-stone-800">
+      <TopBar />
+
+      {/* Header */}
+      <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#f7f1e7]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 pl-1 pr-4 py-3">
+          <Logo />
+
+          {/* Search */}
+          <div className="relative hidden flex-1 max-w-md md:block">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Ürün, kategori ara..."
+              className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2.5 text-sm outline-none transition focus:border-stone-500 focus:shadow"
+            />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+
+          <nav className="hidden items-center gap-5 text-sm font-medium text-stone-700 lg:flex">
+            <a href="#urunler" className="hover:text-stone-900">Ürünler</a>
+            <a href="#yorumlar" className="hover:text-stone-900">Yorumlar</a>
+            <a href="#favori" className="hover:text-stone-900">
+              Favoriler ({favorites.length})
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button onClick={() => setAccountOpen(true)} className="flex items-center gap-1.5 rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:border-stone-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span className="max-sm:hidden">{currentUser ? currentUser.name.split(" ")[0] : "Giriş Yap"}</span>
+            </button>
+            <CartButton onClick={handleOpenCart} count={cartCount} />
+            <button onClick={() => setCompareOpen(true)} className="relative flex items-center gap-1.5 rounded-full border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+              {compareIds.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 text-[9px] text-white">{compareIds.length}</span>
+              )}
+            </button>
+            <button
+              onClick={onAdmin}
+              className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+            >
+              Admin
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile search */}
+        <div className="relative block md:hidden px-4 pb-3">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Ürün ara..."
+            className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2 text-sm outline-none focus:border-stone-500"
+          />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </div>
+      </header>
+
+      <Hero />
+      <CategoriesStrip onPick={(c) => {
+        setActiveCategory(c);
+        document.getElementById("urunler")?.scrollIntoView({ behavior: "smooth" });
+      }} />
+
+      {/* Products */}
+      <main id="urunler" className="mx-auto max-w-7xl px-4 pb-16 pt-8" data-aos="fade-up" data-aos-delay="100">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-amber-700">
+              Koleksiyon
+            </p>
+            <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
+              Tüm Ürünler
+            </h2>
+            <p className="mt-1 text-sm text-stone-500">
+              {filteredProducts.length} ürün listeleniyor
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs font-semibold text-stone-500">Sırala:</label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as typeof sort)}
+              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none"
+            >
+              <option value="default">Varsayılan</option>
+              <option value="price-asc">Fiyata göre (Artan)</option>
+              <option value="price-desc">Fiyata göre (Azalan)</option>
+              <option value="discount">İndirim Oranı</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-8 flex flex-wrap items-center gap-3 border-y border-stone-200 bg-white/60 p-3" data-aos="fade-up" data-aos-delay="150">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={
+                  "rounded-full px-4 py-2 text-xs font-medium transition " +
+                  (activeCategory === cat
+                    ? "bg-stone-800 text-white shadow"
+                    : "border border-stone-300 text-stone-600 hover:border-stone-500")
+                }
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">FİYAT:</span>
+            <input
+              value={priceMin}
+              onChange={(e) => setPriceMin(e.target.value.replace(/\D/g, ""))}
+              placeholder="Min"
+              className="w-16 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+            />
+            <span className="text-[10px] text-stone-400">-</span>
+            <input
+              value={priceMax}
+              onChange={(e) => setPriceMax(e.target.value.replace(/\D/g, ""))}
+              placeholder="Maks"
+              className="w-16 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+            />
+            <span className="h-4 w-px bg-stone-300"></span>
+            {(settings.shops || []).length > 1 && (
+              <>
+                <span className="text-xs font-semibold text-stone-500">MAĞAZA:</span>
+                <select
+                  value={shopFilter}
+                  onChange={(e) => setShopFilter(e.target.value)}
+                  className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-stone-500"
+                >
+                  <option value="all">Tümü</option>
+                  {settings.shops.map((s) => (
+                    <option key={s.name} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+                <span className="h-4 w-px bg-stone-300"></span>
+              </>
+            )}
+            <span className="text-xs font-semibold text-stone-500">DURUM:</span>
+            {([
+              { id: "all", label: "Tümü" },
+              { id: "new", label: "Sıfır" },
+              { id: "second", label: "İkinci El" },
+            ] as { id: ConditionFilter; label: string }[]).map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setConditionFilter(c.id)}
+                className={
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition " +
+                  (conditionFilter === c.id
+                    ? "border-stone-800 bg-stone-800 text-white"
+                    : "border-stone-300 text-stone-600 hover:border-stone-500")
+                }
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid */}
+        {filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={() => handleOpenProduct(product)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="py-20 text-center">
+            <div className="mb-2 text-5xl">🔍</div>
+            <p className="text-lg font-semibold text-stone-700">
+              Aramanızda ürün bulunamadı
+            </p>
+            <p className="mt-1 text-sm text-stone-500">
+              Farklı bir filtre veya arama terimi deneyin.
+            </p>
+          </div>
+        )}
+      </main>
+
+      <InfoStrip />
+      <ReviewSection />
+
+      {/* Favorites */}
+      {favorites.length > 0 && (
+        <section id="favori" className="border-t border-stone-200 bg-white py-12">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-amber-700">Favorilerin</p>
+                <h2 className="font-elegant text-2xl text-stone-800">Beğendiklerin</h2>
+              </div>
+              <p className="text-xs text-stone-400">{favorites.length} ürün</p>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin">
+              {products.filter((p) => favorites.includes(p.id)).map((p) => (
+                <div key={p.id} className="w-36 flex-shrink-0">
+                  <div className="cursor-pointer rounded-xl border border-stone-200 bg-white p-2 transition hover:shadow-md" onClick={() => handleOpenProduct(p)}>
+                    <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-stone-100">
+                      <img src={p.images[0]} alt={p.name} className="h-full w-full object-cover" loading="lazy" />
+                    </div>
+                    <p className="mt-1.5 truncate text-xs font-medium text-stone-700">{p.name}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xs font-bold text-stone-900">{p.priceNum.toLocaleString("tr-TR")} ₺</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToCart({ productId: p.id, quantity: 1 }); }}
+                        disabled={p.status === "out" || p.stock === 0}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-800 text-white hover:bg-stone-700 disabled:opacity-40"
+                        title="Sepete Ekle"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-stone-200 bg-[#efe5d4]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center">
+          <Logo />
+          <p className="max-w-md text-sm text-stone-600">
+            Bej ve fil dişi tonlarında, zamansız giyim koleksiyonu. Gardrops
+            üzerinden güvenli ödeme ile en premium alışveriş deneyimi.
+          </p>
+          <a
+            href="https://www.gardrops.com/msgrdrps"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-stone-800 px-6 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          >
+            Gardrops Mağazamız
+          </a>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
+            <span>Ücretsiz Kargo</span>
+            <span>•</span>
+            <span>Güvenli Ödeme</span>
+            <span>•</span>
+            <span>İade edilmez</span>
+          </div>
+          <p className="text-xs text-stone-400">
+            © {new Date().getFullYear()} MSgrdrps. Tüm hakları saklıdır.
+          </p>
+        </div>
+      </footer>
+
+      {/* Panels */}
+      {selectedProduct && (
+        <ProductDetailPanel product={selectedProduct} onClose={handleCloseProduct} onCartOpen={handleOpenCart} />
+      )}
+      {cartOpen && <CartPanel onClose={handleCloseCart} />}
+      {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
+      {compareOpen && <ComparePanel onClose={() => setCompareOpen(false)} />}
+      {spinOpen && <SpinWheel onClose={() => setSpinOpen(false)} />}
+      <ChatWidget />
+
+      {/* Spin wheel floating button */}
+      <button
+        onClick={() => {
+          if (currentUser) setSpinOpen(true);
+          else setAccountOpen(true);
+        }}
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+        title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6a6 6 0 0 1 6 6"/><path d="M12 10a2 2 0 0 1 2 2"/></svg>
+      </button>
+
+      {/* Toast container */}
+      {toasts.length > 0 && (
+        <div className="fixed bottom-20 right-6 z-50 flex flex-col gap-2">
+          {toasts.map((t) => (
+            <Toast key={t.id} msg={t} onDone={() => dismissToast(t.id)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
