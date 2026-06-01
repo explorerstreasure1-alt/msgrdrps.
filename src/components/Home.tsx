@@ -438,7 +438,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div className="flex-1 flex justify-center">
-              <Logo className="h-8 w-auto object-contain" />
+              <Logo className="h-12 w-auto object-contain" />
             </div>
             <div className="flex items-center gap-1.5">
               <button onClick={() => setAccountOpen(true)} className="p-1.5 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Hesap">
