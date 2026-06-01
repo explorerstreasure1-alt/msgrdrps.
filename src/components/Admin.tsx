@@ -1893,6 +1893,202 @@ function AuctionsTab() {
   );
 }
 
+/* -------- Çark & Ödüller -------- */
+function WheelTab() {
+  const { products, spinPrizes, userCoupons, userGifts, users, addUserCoupon, addPoints, setFastShipping, currentUser, addToast, giftProductId, setGiftProductId } = useStore();
+  const [manualUserId, setManualUserId] = useState("");
+  const [manualPoints, setManualPoints] = useState(100);
+  const [manualDiscount, setManualDiscount] = useState(10);
+
+  const allCoupons = userCoupons;
+  const allGifts = userGifts;
+  const usedCoupons = allCoupons.filter((c) => c.used);
+  const activeCoupons = allCoupons.filter((c) => !c.used);
+  const claimedGifts = allGifts.filter((g) => g.claimed);
+  const unclaimedGifts = allGifts.filter((g) => !g.claimed);
+
+  const cardClass = "rounded-2xl border border-stone-200 bg-white p-5 shadow-sm";
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-elegant text-xl text-stone-800">Çark & Ödüller</h2>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-4">
+        <div className={cardClass}>
+          <p className="text-[11px] uppercase tracking-wider text-stone-400">Toplam Çevrilme</p>
+          <p className="mt-1 text-2xl font-bold text-stone-800">{spinPrizes.length}</p>
+        </div>
+        <div className={cardClass}>
+          <p className="text-[11px] uppercase tracking-wider text-stone-400">Kupon (Kullanılmamış)</p>
+          <p className="mt-1 text-2xl font-bold text-amber-700">{activeCoupons.length}</p>
+        </div>
+        <div className={cardClass}>
+          <p className="text-[11px] uppercase tracking-wider text-stone-400">Kupon (Kullanılmış)</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-700">{usedCoupons.length}</p>
+        </div>
+        <div className={cardClass}>
+          <p className="text-[11px] uppercase tracking-wider text-stone-400">Hediye Talebi</p>
+          <p className="mt-1 text-2xl font-bold text-rose-700">{unclaimedGifts.length}</p>
+        </div>
+      </div>
+
+      {/* Hediye ürün ayarı */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">🎁 Hediye Ürün Ayarı</h3>
+        <div className="flex items-center gap-3">
+          <select
+            value={giftProductId}
+            onChange={(e) => setGiftProductId(e.target.value)}
+            className="inp max-w-sm"
+          >
+            <option value="">Hediye ürün seçilmedi</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} — {p.price}</option>
+            ))}
+          </select>
+          {giftProductId && (
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+              ✓ {products.find((p) => p.id === giftProductId)?.name}
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-xs text-stone-400">Çarkta "HEDİYE" kazanan kullanıcıya bu ürün ücretsiz verilir.</p>
+      </div>
+
+      {/* Son çevrilmeler */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">🔄 Son Çevrilmeler</h3>
+        <div className="max-h-48 space-y-1.5 overflow-y-auto">
+          {spinPrizes.length === 0 ? (
+            <p className="text-xs text-stone-400">Henüz çevrilme yok</p>
+          ) : (
+            [...spinPrizes].reverse().slice(0, 20).map((s) => (
+              <div key={s.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-2 text-xs">
+                <span className={
+                  "font-medium " + (
+                    s.prize === "gift" ? "text-rose-700" :
+                    s.prize === "fastship" ? "text-blue-700" :
+                    s.prize.startsWith("points") ? "text-emerald-700" :
+                    "text-amber-700"
+                  )
+                }>
+                  {s.prize === "gift" ? "🎁 Hediye" :
+                   s.prize === "fastship" ? "🚀 Hızlı Gönderim" :
+                   s.prize.startsWith("points") ? `⭐ ${s.label} Puan` :
+                   `🏷️ ${s.label} İndirim`}
+                </span>
+                <span className="text-stone-400">{new Date(s.date).toLocaleString("tr-TR")}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Kuponlar */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">🎟️ Kuponlar ({allCoupons.length})</h3>
+        <div className="max-h-60 space-y-1.5 overflow-y-auto">
+          {allCoupons.length === 0 ? (
+            <p className="text-xs text-stone-400">Henüz kupon yok</p>
+          ) : (
+            [...allCoupons].reverse().map((c) => (
+              <div key={c.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-amber-800">{c.code}</span>
+                  <span>%{c.discountPercent}</span>
+                  <span className="text-stone-400">— {c.description}</span>
+                </div>
+                <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold " + (c.used ? "bg-stone-200 text-stone-500" : "bg-emerald-100 text-emerald-700")}>
+                  {c.used ? "Kullanıldı" : "Aktif"}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Hediye ürün talepleri */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">🎁 Hediye Talepleri</h3>
+        <div className="max-h-48 space-y-1.5 overflow-y-auto">
+          {allGifts.length === 0 ? (
+            <p className="text-xs text-stone-400">Henüz hediye kazanılmamış</p>
+          ) : (
+            [...allGifts].reverse().map((g) => (
+              <div key={g.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-2 text-xs">
+                <div>
+                  <span className="font-medium text-stone-800">{g.productName}</span>
+                  <span className="ml-2 text-stone-400">— {g.userId}</span>
+                </div>
+                <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold " + (g.claimed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")}>
+                  {g.claimed ? "Teslim Alındı" : "Bekliyor"}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Kullanıcı puanları */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">⭐ Kullanıcı Puanları</h3>
+        <div className="max-h-48 space-y-1.5 overflow-y-auto">
+          {users.filter((u) => (u.points || 0) > 0).length === 0 ? (
+            <p className="text-xs text-stone-400">Henüz puan kazanan yok</p>
+          ) : (
+            users.filter((u) => (u.points || 0) > 0).map((u) => (
+              <div key={u.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-2 text-xs">
+                <span className="font-medium text-stone-800">{u.name}</span>
+                <span className="font-bold text-emerald-700">{u.points} puan</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Manuel ödül verme */}
+      <div className={cardClass}>
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">🛠️ Manuel Ödül Ver</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Kullanıcı ID">
+            <input value={manualUserId} onChange={(e) => setManualUserId(e.target.value)} placeholder="Kullanıcı ID'si" className="inp" />
+          </Field>
+          <Field label="Puan">
+            <input type="number" value={manualPoints} onChange={(e) => setManualPoints(Number(e.target.value) || 0)} className="inp" />
+          </Field>
+          <Field label="İndirim %">
+            <input type="number" value={manualDiscount} onChange={(e) => setManualDiscount(Number(e.target.value) || 0)} className="inp" />
+          </Field>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => { if (manualUserId) { addPoints(manualUserId, manualPoints); addToast(`${manualPoints} puan eklendi`, "success"); } }}
+            disabled={!manualUserId}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Puan Ver
+          </button>
+          <button
+            onClick={() => { if (manualUserId && manualDiscount > 0) { addUserCoupon(manualUserId, manualDiscount); addToast(`%${manualDiscount} kupon oluşturuldu`, "success"); } }}
+            disabled={!manualUserId || manualDiscount <= 0}
+            className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+          >
+            Kupon Ver
+          </button>
+          <button
+            onClick={() => { if (manualUserId) { setFastShipping(manualUserId); addToast("Hızlı gönderim hakkı verildi", "success"); } }}
+            disabled={!manualUserId}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            🚀 Hızlı Gönderim Ver
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* -------- Field helper -------- */
 function Field({
   label,
@@ -1915,6 +2111,7 @@ function Field({
 const TABS = [
   { id: "products", label: "Ürünler" },
   { id: "auctions", label: "Açık Artırma" },
+  { id: "wheel", label: "Çark & Ödüller" },
   { id: "statistics", label: "İstatistikler" },
   { id: "discounts", label: "İndirimler" },
   { id: "reviews", label: "Yorumlar" },
@@ -2017,6 +2214,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
 
         {tab === "products" && <ProductsTab />}
         {tab === "auctions" && <AuctionsTab />}
+        {tab === "wheel" && <WheelTab />}
         {tab === "statistics" && <StatsTab />}
         {tab === "discounts" && <DiscountsTab />}
         {tab === "reviews" && <ReviewsTab />}

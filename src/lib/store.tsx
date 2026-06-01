@@ -305,6 +305,8 @@ const K = {
   compare: "msgrdrps_compare",
   auctions: "msgrdrps_auctions",
   bids: "msgrdrps_bids",
+  userCoupons: "msgrdrps_userCoupons",
+  userGifts: "msgrdrps_userGifts",
 };
 
 /* ------------------------- Account --------------------------- */
@@ -315,6 +317,31 @@ export interface User {
   email: string;
   password: string;
   orderIds: string[];
+  points: number;
+  fastShipping: boolean;
+}
+
+export interface UserCoupon {
+  id: string;
+  userId: string;
+  code: string;
+  discountPercent: number;
+  description: string;
+  used: boolean;
+  usedAt?: number;
+  orderId?: string;
+  createdAt: number;
+}
+
+export interface UserGiftClaim {
+  id: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  claimed: boolean;
+  claimedAt?: number;
+  orderId?: string;
+  createdAt: number;
 }
 
 export interface Order {
@@ -423,6 +450,19 @@ interface StoreCtx {
   lastSpinDate: string;
   addSpinPrize: (p: SpinPrize) => void;
   setLastSpinDate: (d: string) => void;
+  // coupons / gifts / points
+  userCoupons: UserCoupon[];
+  userGifts: UserGiftClaim[];
+  addUserCoupon: (userId: string, discountPercent: number) => string;
+  addUserGift: (userId: string, productId: string, productName: string) => void;
+  useCoupon: (couponId: string, orderId: string) => void;
+  claimGift: (giftId: string, orderId: string) => void;
+  addPoints: (userId: string, amount: number) => void;
+  spendPoints: (userId: string, amount: number) => boolean;
+  setFastShipping: (userId: string) => void;
+  useFastShipping: (userId: string) => void;
+  giftProductId: string;
+  setGiftProductId: (id: string) => void;
   // auctions
   auctions: Auction[];
   bids: Bid[];
@@ -478,6 +518,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [lastSpinDate, setLastSpinDate] = useState<string>(() => load("lastSpinDate", ""));
   const [auctions, setAuctions] = useState<Auction[]>(() => load(K.auctions, []));
   const [bids, setBids] = useState<Bid[]>(() => load(K.bids, []));
+  const [userCoupons, setUserCoupons] = useState<UserCoupon[]>(() => load(K.userCoupons, []));
+  const [userGifts, setUserGifts] = useState<UserGiftClaim[]>(() => load(K.userGifts, []));
+  const [giftProductId, setGiftProductId] = useState<string>(() => load("giftProductId", ""));
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
   useEffect(() => save(K.products, products), [products]);
@@ -495,6 +538,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => save("lastSpinDate", lastSpinDate), [lastSpinDate]);
   useEffect(() => save(K.auctions, auctions), [auctions]);
   useEffect(() => save(K.bids, bids), [bids]);
+  useEffect(() => save(K.userCoupons, userCoupons), [userCoupons]);
+  useEffect(() => save(K.userGifts, userGifts), [userGifts]);
+  useEffect(() => save("giftProductId", giftProductId), [giftProductId]);
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
@@ -508,6 +554,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (e.key === K.compare && e.newValue) setCompareIds(JSON.parse(e.newValue));
       if (e.key === K.auctions && e.newValue) setAuctions(JSON.parse(e.newValue));
       if (e.key === K.bids && e.newValue) setBids(JSON.parse(e.newValue));
+      if (e.key === K.userCoupons && e.newValue) setUserCoupons(JSON.parse(e.newValue));
+      if (e.key === K.userGifts && e.newValue) setUserGifts(JSON.parse(e.newValue));
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
@@ -662,6 +710,84 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addSpinPrize = (p: SpinPrize) => setSpinPrizes((prev) => [p, ...prev]);
 
+  const addUserCoupon = (userId: string, discountPercent: number): string => {
+    const code = "CW" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const coupon: UserCoupon = {
+      id: uid(),
+      userId,
+      code,
+      discountPercent,
+      description: `Çark ödülü: %${discountPercent} indirim`,
+      used: false,
+      createdAt: Date.now(),
+    };
+    setUserCoupons((prev) => [...prev, coupon]);
+    return code;
+  };
+
+  const addUserGift = (userId: string, productId: string, productName: string) => {
+    const gift: UserGiftClaim = {
+      id: uid(),
+      userId,
+      productId,
+      productName,
+      claimed: false,
+      createdAt: Date.now(),
+    };
+    setUserGifts((prev) => [...prev, gift]);
+  };
+
+  const useCoupon = (couponId: string, orderId: string) => {
+    setUserCoupons((prev) =>
+      prev.map((c) => (c.id === couponId ? { ...c, used: true, usedAt: Date.now(), orderId } : c))
+    );
+  };
+
+  const claimGift = (giftId: string, orderId: string) => {
+    setUserGifts((prev) =>
+      prev.map((g) => (g.id === giftId ? { ...g, claimed: true, claimedAt: Date.now(), orderId } : g))
+    );
+  };
+
+  const addPoints = (userId: string, amount: number) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, points: (u.points || 0) + amount } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => prev ? { ...prev, points: (prev.points || 0) + amount } : prev);
+    }
+  };
+
+  const spendPoints = (userId: string, amount: number): boolean => {
+    const user = users.find((u) => u.id === userId);
+    if (!user || (user.points || 0) < amount) return false;
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, points: (u.points || 0) - amount } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => prev ? { ...prev, points: (prev.points || 0) - amount } : prev);
+    }
+    return true;
+  };
+
+  const setFastShipping = (userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, fastShipping: true } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => prev ? { ...prev, fastShipping: true } : prev);
+    }
+  };
+
+  const useFastShipping = (userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, fastShipping: false } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => prev ? { ...prev, fastShipping: false } : prev);
+    }
+  };
+
   const createAuction = (productId: string, startPrice: number, durationHours: number, minIncrement = 10) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
@@ -781,7 +907,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const register = (name: string, email: string, password: string): User | null => {
     if (users.find((u) => u.email === email)) return null;
-    const user: User = { id: uid(), name, email, password, orderIds: [] };
+    const user: User = { id: uid(), name, email, password, orderIds: [], points: 0, fastShipping: false };
     setUsers((prev) => [...prev, user]);
     setCurrentUser(user);
     return user;
@@ -852,10 +978,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         spinPrizes,
         lastSpinDate,
         setLastSpinDate,
+        userCoupons,
+        userGifts,
+        addUserCoupon,
+        addUserGift,
+        useCoupon,
+        claimGift,
+        addPoints,
+        spendPoints,
+        setFastShipping,
+        useFastShipping,
+        giftProductId,
+        setGiftProductId,
         auctions,
         bids,
         createAuction,
-        placeBid,
         acceptBid,
         rejectBid,
         cancelAuction,
