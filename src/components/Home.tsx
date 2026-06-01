@@ -325,6 +325,12 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     }
   }, [products]);
 
+  useEffect(() => {
+    if (menuOpen) { document.body.style.overflow = "hidden"; }
+    else { document.body.style.overflow = ""; }
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
+
   const categories = useMemo(
     () => ["Tümü", ...Array.from(new Set(products.map((p) => p.category)))],
     [products]
@@ -460,35 +466,39 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
           </div>
         </div>
 
-        {/* Mobile slide-out menu */}
-        {menuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <div className="absolute inset-0 bg-black/20" onClick={() => setMenuOpen(false)} />
-            <div className="relative w-64 max-w-[75vw] h-full bg-[#FDFBF7] shadow-xl animate-slideRight p-6">
-              <button onClick={() => setMenuOpen(false)} className="absolute right-4 top-4 text-stone-400 hover:text-stone-700">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </header>
+
+      {/* Mobile slide-out drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-0 left-0 h-full w-[80vw] max-w-[340px] bg-[#FDFBF7] shadow-[5px_0_25px_rgba(0,0,0,0.05)] p-6 flex flex-col transition-all duration-300">
+            <div className="flex items-center justify-between pb-6 border-b border-stone-200/60">
+              <span className="font-serif italic text-lg tracking-wider text-stone-800">msgrdrps.</span>
+              <button onClick={() => setMenuOpen(false)} className="text-stone-400 hover:text-stone-800 transition-colors">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
-              <div className="mt-8 space-y-1">
-                {currentUser && (
-                  <p className="px-3 py-2 text-sm font-medium text-stone-700 border-b border-stone-100 mb-2">{currentUser.name}</p>
-                )}
-                <button onClick={() => { setAccountOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  {currentUser ? "Hesabım" : "Giriş Yap / Kayıt Ol"}
-                </button>
-                <button onClick={() => { setCompareOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                  Karşılaştır {compareIds.length > 0 && `(${compareIds.length})`}
-                </button>
-                <button onClick={() => { onAdmin(); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                  Admin Paneli
-                </button>
-              </div>
+            </div>
+            <nav className="flex flex-col gap-6 mt-8">
+              <button onClick={() => { setAccountOpen(true); setMenuOpen(false); }} className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-medium text-stone-700 hover:text-black hover:pl-2 transition-all duration-200 border-b border-stone-100 pb-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {currentUser ? "Hesabım" : "Giriş Yap / Kayıt Ol"}
+              </button>
+              <button onClick={() => { setCompareOpen(true); setMenuOpen(false); }} className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-medium text-stone-700 hover:text-black hover:pl-2 transition-all duration-200 border-b border-stone-100 pb-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                Karşılaştır {compareIds.length > 0 && `(${compareIds.length})`}
+              </button>
+              <button onClick={() => { onAdmin(); setMenuOpen(false); }} className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-medium text-stone-700 hover:text-black hover:pl-2 transition-all duration-200 border-b border-stone-100 pb-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                Admin Paneli
+              </button>
+            </nav>
+            <div className="mt-auto text-[10px] tracking-widest text-stone-400 uppercase">
+              © 2026 msgrdrps.
             </div>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
       <Hero />
       <CategoriesStrip onPick={(c) => {
