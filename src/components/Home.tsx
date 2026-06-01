@@ -394,11 +394,11 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#f7f1e7]/95 backdrop-blur">
-        {/* Desktop: single row */}
-        <div className="mx-auto hidden max-w-7xl items-center justify-between gap-1 pl-1 pr-4 py-1 md:flex">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 pl-1 pr-4 py-1">
           <Logo />
 
-          <div className="relative flex-1 max-w-md">
+          {/* Search */}
+          <div className="relative hidden flex-1 max-w-md md:block">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -442,29 +442,19 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
           </div>
         </div>
 
-        {/* Mobile: stacked — logo top, icons middle, search bottom */}
-        <div className="md:hidden">
-          <Logo className="h-48 sm:h-52 block pl-3 pt-4 pb-2" />
-          <div className="flex items-center justify-center gap-1.5 pb-2 px-3">
-            <button onClick={() => setAccountOpen(true)} className="flex items-center gap-1.5 rounded-full border border-stone-300 px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>{currentUser ? currentUser.name.split(" ")[0] : "Giriş"}</span>
-            </button>
-            <CartButton onClick={handleOpenCart} count={cartCount} />
-            <button onClick={() => setCompareOpen(true)} className="relative flex items-center gap-1.5 rounded-full border border-stone-300 px-3 py-2 text-xs text-stone-700 hover:bg-stone-50">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-              {compareIds.length > 0 && (<span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-600 px-0.5 text-[8px] text-white">{compareIds.length}</span>)}
-            </button>
-            <button onClick={onAdmin} className="rounded-full bg-stone-800 px-4 py-2 text-xs font-medium text-white">Admin</button>
-          </div>
-          <div className="relative px-4 pb-0">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ürün ara..."
-              className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2 text-sm outline-none focus:border-stone-500" />
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-            </svg>
-          </div>
+        {/* Mobile search */}
+        <div className="relative block md:hidden px-4 pb-0">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Ürün ara..."
+            className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2 text-sm outline-none focus:border-stone-500"
+          />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
         </div>
       </header>
 
