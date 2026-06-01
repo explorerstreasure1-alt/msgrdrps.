@@ -470,9 +470,24 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
             <p className="text-sm uppercase tracking-[0.25em] text-amber-700">
               Koleksiyon
             </p>
-            <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
-              Tüm Ürünler
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
+                Tüm Ürünler
+              </h2>
+              <button
+                onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc]"
+                title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a68958" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
+                  <circle cx="12" cy="12" r="10" fill="#f5efe4"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a"/>
+                  <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a"/>
+                  <circle cx="12" cy="12" r="2.5" fill="#d4af37" stroke="#d4af37"/>
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#c4a99a" strokeWidth="1.2"/>
+                </svg>
+              </button>
+            </div>
             <p className="mt-1 text-sm text-stone-500">
               {filteredProducts.length} ürün listeleniyor
             </p>
@@ -725,24 +740,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
       {compareOpen && <ComparePanel onClose={() => setCompareOpen(false)} />}
       {spinOpen && <SpinWheel onClose={() => setSpinOpen(false)} />}
-
-      {/* Spin wheel floating button — large left */}
-      <button
-        onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
-        className="fixed top-1/2 left-6 -translate-y-1/2 z-[70] flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-[#e8dccc]"
-        title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
-      >
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a68958" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
-          <circle cx="12" cy="12" r="10" fill="#f5efe4"/>
-          <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a"/>
-          <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a"/>
-          <circle cx="12" cy="12" r="2.5" fill="#d4af37" stroke="#d4af37"/>
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#c4a99a" strokeWidth="1.2"/>
-        </svg>
-        <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-[#a68958] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          Çark
-        </span>
-      </button>
 
       <ChatWidget />
 
