@@ -303,6 +303,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [spinOpen, setSpinOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
   const [search, setSearch] = useState("");
@@ -394,68 +395,99 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#f7f1e7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 pl-1 pr-4 py-1">
+        {/* Desktop layout */}
+        <div className="mx-auto hidden max-w-7xl items-center justify-between gap-1 pl-1 pr-4 py-1 md:flex">
           <Logo />
-
-          {/* Search */}
-          <div className="relative hidden flex-1 max-w-md md:block">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Ürün, kategori ara..."
-              className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2.5 text-sm outline-none transition focus:border-stone-500 focus:shadow"
-            />
+          <div className="relative flex-1 max-w-md">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ürün, kategori ara..."
+              className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2.5 text-sm outline-none transition focus:border-stone-500 focus:shadow" />
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
             </svg>
           </div>
-
           <nav className="hidden items-center gap-5 text-sm font-medium text-stone-700 lg:flex">
             <a href="#urunler" className="hover:text-stone-900">Ürünler</a>
             <a href="#yorumlar" className="hover:text-stone-900">Yorumlar</a>
-            <a href="#favori" className="hover:text-stone-900">
-              Favoriler ({favorites.length})
-            </a>
+            <a href="#favori" className="hover:text-stone-900">Favoriler ({favorites.length})</a>
           </nav>
-
           <div className="flex items-center gap-2">
             <button onClick={() => setAccountOpen(true)} className="flex items-center gap-1.5 rounded-full border border-stone-300 px-5 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:border-stone-400">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span className="hidden sm:inline">{currentUser ? currentUser.name.split(" ")[0] : "Giriş Yap"}</span>
-              <span className="sm:hidden">{currentUser ? currentUser.name.split(" ")[0] : "Giriş"}</span>
+              <span>{currentUser ? currentUser.name.split(" ")[0] : "Giriş Yap"}</span>
             </button>
             <CartButton onClick={handleOpenCart} count={cartCount} />
             <button onClick={() => setCompareOpen(true)} className="relative flex items-center gap-1.5 rounded-full border border-stone-300 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-              {compareIds.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 text-[9px] text-white">{compareIds.length}</span>
-              )}
+              {compareIds.length > 0 && (<span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 text-[9px] text-white">{compareIds.length}</span>)}
             </button>
-            <button
-              onClick={onAdmin}
-              className="rounded-full bg-stone-800 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700"
-            >
-              Admin
-            </button>
+            <button onClick={onAdmin} className="rounded-full bg-stone-800 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700">Admin</button>
           </div>
         </div>
 
-        {/* Mobile search */}
-        <div className="relative block md:hidden px-4 pb-0">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Ürün ara..."
-            className="w-full rounded-full border border-stone-300 bg-white pl-10 pr-4 py-2 text-sm outline-none focus:border-stone-500"
-          />
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
+        {/* Mobile layout */}
+        <div className="md:hidden">
+          <div className="flex items-center justify-between px-3 py-2 w-full">
+            <button onClick={() => setMenuOpen(!menuOpen)} className="p-1.5 -ml-1 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Menü">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div className="flex-1 flex justify-center">
+              <Logo className="h-8 w-auto object-contain" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setAccountOpen(true)} className="p-1.5 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Hesap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+              <button onClick={handleOpenCart} className="relative p-1.5 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Sepet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                </svg>
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-semibold text-white">{cartCount}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile search */}
+          <div className="relative px-3 pb-1.5">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ürün ara..."
+              className="w-full rounded-full border border-stone-300 bg-white pl-9 pr-3 py-1.5 text-xs outline-none focus:border-stone-500" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              className="pointer-events-none absolute left-6 top-1/2 -translate-y-1/2">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
         </div>
+
+        {/* Mobile slide-out menu */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            <div className="absolute inset-0 bg-black/20" onClick={() => setMenuOpen(false)} />
+            <div className="relative w-64 max-w-[75vw] h-full bg-[#FDFBF7] shadow-xl animate-slideRight p-6">
+              <button onClick={() => setMenuOpen(false)} className="absolute right-4 top-4 text-stone-400 hover:text-stone-700">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+              <div className="mt-8 space-y-1">
+                {currentUser && (
+                  <p className="px-3 py-2 text-sm font-medium text-stone-700 border-b border-stone-100 mb-2">{currentUser.name}</p>
+                )}
+                <button onClick={() => { setAccountOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {currentUser ? "Hesabım" : "Giriş Yap / Kayıt Ol"}
+                </button>
+                <button onClick={() => { setCompareOpen(true); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                  Karşılaştır {compareIds.length > 0 && `(${compareIds.length})`}
+                </button>
+                <button onClick={() => { onAdmin(); setMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                  Admin Paneli
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <Hero />
