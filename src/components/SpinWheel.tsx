@@ -221,13 +221,14 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
         <button
           onClick={spin}
           disabled={!canSpin || spinning}
-          className="mx-auto block rounded-full px-10 py-3 text-sm font-bold text-white tracking-wider shadow-lg transition-all duration-300 disabled:bg-stone-300 disabled:text-stone-400 disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95"
+          className="mx-auto block rounded-full px-10 py-3 text-sm font-bold text-white tracking-wider shadow-lg transition-all duration-300 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95"
           style={{
-            background: spinning ? "#dcd9d4" : "linear-gradient(135deg, #d4af37, #a68958, #8c7343)",
-            boxShadow: spinning ? "none" : "0 8px 25px rgba(166, 137, 88, 0.4)",
+            background: !canSpin ? "#d6d3d1" : spinning ? "#dcd9d4" : "linear-gradient(135deg, #d4af37, #a68958, #8c7343)",
+            boxShadow: !canSpin || spinning ? "none" : "0 8px 25px rgba(166, 137, 88, 0.4)",
+            color: !canSpin ? "#a8a29e" : "#ffffff",
           }}
         >
-          {spinning ? "✨ Çevriliyor..." : "🎯 ŞANSINI DENE"}
+          {spinning ? "✨ Çevriliyor..." : !canSpin ? (!currentUser ? "🔒 Giriş Yap" : "⏰ Yarın Gel") : "🎯 ŞANSINI DENE"}
         </button>
 
         {/* Result popup */}
