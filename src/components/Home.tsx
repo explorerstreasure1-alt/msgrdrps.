@@ -96,7 +96,7 @@ function Hero() {
       <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-200/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-stone-300/20 blur-3xl" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-6 lg:grid-cols-2 lg:py-16">
+      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-4 lg:grid-cols-2 lg:py-16">
         <div className="space-y-6" data-aos="fade-right">
           <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em]">
             ⋆ Yeni Sezon ⋆
@@ -201,7 +201,7 @@ function CategoriesStrip({ onPick }: { onPick: (c: string) => void }) {
   );
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-4 sm:py-8">
+    <section className="mx-auto max-w-7xl px-4 py-2 sm:py-8">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {cats.map((cat) => (
           <button
@@ -394,7 +394,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#f7f1e7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 pl-1 pr-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 pl-1 pr-4 py-2">
           <Logo />
 
           {/* Search */}
@@ -442,7 +442,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         {/* Mobile search */}
-        <div className="relative block md:hidden px-4 pb-3">
+        <div className="relative block md:hidden px-4 pb-1">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -464,7 +464,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       }} />
 
       {/* Products */}
-      <main id="urunler" className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:pt-8" data-aos="fade-up" data-aos-delay="100">
+      <main id="urunler" className="mx-auto max-w-7xl px-4 pb-16 pt-1 sm:pt-8" data-aos="fade-up" data-aos-delay="100">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-amber-700">
