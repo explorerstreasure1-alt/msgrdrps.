@@ -115,10 +115,11 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div onClick={onClose} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-      <div
-        className="fixed inset-x-4 top-1/2 z-[60] mx-auto max-w-sm -translate-y-1/2 rounded-3xl bg-[#fcfbfa] p-5 shadow-2xl border border-stone-200 transition-all duration-400"
-        style={{ opacity: entering ? 0 : 1, transform: entering ? "translateY(20px) scale(0.96)" : "translateY(-50%) scale(1)" }}
-      >
+      <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+        <div
+          className="w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-[#fcfbfa] p-5 shadow-2xl border border-stone-200 pointer-events-auto transition-all duration-400"
+          style={{ opacity: entering ? 0 : 1, transform: entering ? "translateY(20px) scale(0.96)" : "scale(1)" }}
+        >
         <button onClick={onClose} className="absolute right-3 top-3 rounded-full p-1 text-stone-400 hover:bg-stone-100 z-10">✕</button>
 
         <div className="mb-4 text-center">
@@ -282,6 +283,7 @@ export default function SpinWheel({ onClose }: { onClose: () => void }) {
             )}
           </div>
         )}
+      </div>
       </div>
     </>
   );
