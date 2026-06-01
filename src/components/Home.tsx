@@ -16,7 +16,7 @@ type ConditionFilter = "all" | "new" | "second";
 
 function TopBar() {
   return (
-    <div className="bg-stone-800 py-1.5 text-center sm:py-2">
+    <div className="bg-stone-800 py-1.5 pb-2 text-center sm:py-2">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 text-xs tracking-wide text-stone-200">
         <span className="hidden sm:inline">🚚</span>
         <span>Ücretsiz Kargo</span>
@@ -58,7 +58,7 @@ function Logo() {
       <img
         src={logoSrc}
         alt="MSgrdrps"
-        className="h-64 w-auto object-contain sm:h-72"
+        className="h-14 w-auto object-contain sm:h-72"
       />
     </a>
   );
