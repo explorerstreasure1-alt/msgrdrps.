@@ -4,14 +4,14 @@ import { useStore, type Product } from "../lib/store";
 function ConditionBadge({ condition }: { condition: "new" | "second" }) {
   if (condition === "new") {
     return (
-      <span className="rounded-full bg-emerald-600/90 px-1.5 py-[1px] text-[9px] font-semibold text-white leading-tight">
+      <span className="rounded-full bg-emerald-600/90 px-1 py-0 text-[7px] font-semibold text-white leading-none">
         SIFIR
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-amber-600/90 px-1.5 py-[1px] text-[9px] font-semibold text-white leading-tight">
-      İKİNCİ EL
+    <span className="rounded-full bg-amber-600/90 px-1 py-0 text-[7px] font-semibold text-white leading-none">
+      2.EL
     </span>
   );
 }
@@ -173,13 +173,13 @@ export default function ProductCard({
         <div className="absolute inset-0 z-0 rounded-t-xl pointer-events-none shadow-[inset_0_1px_3px_rgba(255,255,255,0.5),inset_0_-1px_2px_rgba(0,0,0,0.15)]" />
 
         {/* badges: discount > category > condition */}
-        <div className="absolute left-1 top-1 z-30 flex flex-col gap-[2px]">
+        <div className="absolute left-0.5 top-0.5 z-30 flex flex-col gap-0">
           {discounted && (
-            <span className="rounded-full bg-red-600 px-1.5 py-[1px] text-[9px] font-bold text-white shadow-md text-center leading-tight">
-              %{product.discount || Math.round(((product.originalPriceNum! - product.priceNum) / product.originalPriceNum!) * 100)} İNDİRİM
+            <span className="rounded-full bg-red-600 px-1 py-0 text-[7px] font-bold text-white shadow-sm text-center leading-none">
+              %{product.discount || Math.round(((product.originalPriceNum! - product.priceNum) / product.originalPriceNum!) * 100)} İND.
             </span>
           )}
-          <span className="rounded-full bg-white/90 px-1.5 py-[1px] text-[9px] font-semibold text-stone-700 shadow-sm leading-tight">
+          <span className="rounded-full bg-white/90 px-1 py-0 text-[7px] font-semibold text-stone-700 shadow-sm leading-none">
             {product.category}
           </span>
           <ConditionBadge condition={product.condition} />
