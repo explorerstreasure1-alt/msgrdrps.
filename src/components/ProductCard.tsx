@@ -182,7 +182,7 @@ export default function ProductCard({
 
         {/* Discount badge */}
         {discounted && (
-          <div className="absolute right-2 top-2 z-30 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
+          <div className="absolute left-2 top-2 z-30 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
             %{product.discount || Math.round(((product.originalPriceNum! - product.priceNum) / product.originalPriceNum!) * 100)} İNDİRİM
           </div>
         )}

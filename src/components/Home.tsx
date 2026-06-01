@@ -52,13 +52,13 @@ function CartButton({ onClick, count }: { onClick: () => void; count: number }) 
   );
 }
 
-function Logo() {
+function Logo({ className }: { className?: string }) {
   return (
     <a href="/" className="flex items-center">
       <img
         src={logoSrc}
         alt="MSgrdrps"
-        className="h-20 w-auto object-contain sm:h-72"
+        className={(className || "h-20") + " w-auto object-contain sm:h-72"}
       />
     </a>
   );
@@ -467,16 +467,16 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       <main id="urunler" className="mx-auto max-w-7xl px-4 pb-16 pt-1 sm:pt-8" data-aos="fade-up" data-aos-delay="100">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-2 sm:mb-6 sm:gap-3">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-amber-700">
+            <p className="pt-4 text-sm uppercase tracking-[0.25em] text-amber-700 sm:pt-0">
               Koleksiyon
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
               <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
                 Tüm Ürünler
               </h2>
               <button
                 onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc] ml-8"
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc]"
                 title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
               >
                 <svg width="64" height="64" viewBox="1 1 22 22" fill="none" stroke="#a68958" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
@@ -488,7 +488,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 </svg>
               </button>
             </div>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="mt-2 text-xs text-stone-500">
               {filteredProducts.length} ürün listeleniyor
             </p>
           </div>
@@ -509,7 +509,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 flex flex-wrap items-center gap-3 border-y border-stone-200 bg-white/60 p-3" data-aos="fade-up" data-aos-delay="150">
+        <div className="mb-8 mt-4 flex flex-wrap items-center gap-3 border-y border-stone-200 bg-white/60 p-3 sm:mt-0" data-aos="fade-up" data-aos-delay="150">
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
@@ -703,7 +703,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       {/* Footer */}
       <footer className="border-t border-stone-200 bg-[#efe5d4]">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center">
-          <Logo />
+          <Logo className="h-32 sm:h-72" />
           <p className="max-w-md text-sm text-stone-600">
             Bej ve fil dişi tonlarında, zamansız giyim koleksiyonu. Gardrops
             üzerinden güvenli ödeme ile en premium alışveriş deneyimi.
