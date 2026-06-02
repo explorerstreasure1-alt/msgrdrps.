@@ -16,6 +16,55 @@ import logoSrc from "../logo-admin.png";
 
 const ADMIN_PASSWORD = "tanem123+";
 
+/* Shared helper to read Gardrops store import (SSE local / JSON Vercel) */
+async function readGardropsStore(url: string, onProduct: (p: any) => void, onDone?: () => void, onError?: (e: string) => void, signal?: AbortSignal) {
+  const res = await fetch("/api/scrape-gardrops-store", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+    signal,
+  });
+  if (!res.ok) { onError?.("Sunucu hatası"); return; }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    const json = await res.json();
+    if (json.success && json.products) {
+      for (const p of json.products) onProduct(p);
+      onDone?.();
+    } else {
+      onError?.(json.error || "Bilinmeyen hata");
+    }
+    return;
+  }
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let currentEvent = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const parts = buf.split("\n\n");
+    buf = parts.pop() || "";
+    for (const part of parts) {
+      if (!part) continue;
+      const lines = part.split("\n");
+      let dataLine = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) currentEvent = line.slice(7);
+        else if (line.startsWith("data: ")) dataLine = line.slice(6);
+      }
+      if (!dataLine) continue;
+      try {
+        const ev = JSON.parse(dataLine);
+        if (currentEvent === "product") onProduct(ev.product);
+        else if (currentEvent === "done") onDone?.();
+        else if (currentEvent === "error") onError?.(ev.error);
+      } catch {}
+    }
+  }
+}
+
 /* -------- helpers for files/images -------- */
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -675,73 +724,42 @@ function ProductsTab() {
                   const ab = new AbortController();
                   storeAbortRef.current = () => ab.abort();
                   try {
-                    const res = await fetch("/api/scrape-gardrops-store", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ url: importUrl }),
-                      signal: ab.signal,
-                    });
-                    if (!res.ok) { alert("Sunucu hatası"); return; }
-                    const reader = res.body!.getReader();
-                    const decoder = new TextDecoder();
-                    let buf = "";
-                    let currentEvent = "";
-                    while (true) {
-                      const { done, value } = await reader.read();
-                      if (done) break;
-                      buf += decoder.decode(value, { stream: true });
-                      const parts = buf.split("\n\n");
-                      buf = parts.pop() || "";
-                      for (const part of parts) {
-                        if (!part) continue;
-                        const lines = part.split("\n");
-                        let dataLine = "";
-                        for (const line of lines) {
-                          if (line.startsWith("event: ")) currentEvent = line.slice(7);
-                          else if (line.startsWith("data: ")) dataLine = line.slice(6);
-                        }
-                        if (!dataLine) continue;
-                        try {
-                          const ev = JSON.parse(dataLine);
-                          if (currentEvent === "product") {
-                            const d = ev.product;
-                            const pid = uid();
-                            setImported((prev) => [
-                              ...prev,
-                              {
-                                id: pid,
-                                name: d.name || "",
-                                price: d.price || "",
-                                priceNum: d.priceNum || 0,
-                                originalPriceNum: d.originalPriceNum || 0,
-                                originalPrice: d.originalPrice || "",
-                                discount: d.discount || 0,
-                                hasDiscount: d.hasDiscount || false,
-                                category: d.category || "",
-                                description: d.description || "",
-                                images: d.images || [],
-                                gardropsUrl: d.gardropsUrl || "",
-                                condition: d.condition || "new",
-                                status: "active" as const,
-                                stock: 1,
-                                gifts: [],
-                                shop: settings.shops?.[0]?.name || "msgrdrps",
-                              },
-                            ]);
-                            setSelectedImportIds((prev) => {
-                              const next = new Set(prev);
-                              next.add(pid);
-                              return next;
-                            });
-                            setStoreProgress({ current: ev.index + 1, total: ev.total });
-                          } else if (currentEvent === "done") {
-                            setStoreProgress((p) => ({ ...p, current: p.total }));
-                          } else if (currentEvent === "error") {
-                            alert(ev.error);
-                          }
-                        } catch {}
-                      }
-                    }
+                    await readGardropsStore(
+                      importUrl,
+                      (d) => {
+                        const pid = uid();
+                        setImported((prev) => [
+                          ...prev,
+                          {
+                            id: pid,
+                            name: d.name || "",
+                            price: d.price || "",
+                            priceNum: d.priceNum || 0,
+                            originalPriceNum: d.originalPriceNum || 0,
+                            originalPrice: d.originalPrice || "",
+                            discount: d.discount || 0,
+                            hasDiscount: d.hasDiscount || false,
+                            category: d.category || "",
+                            description: d.description || "",
+                            images: d.images || [],
+                            gardropsUrl: d.gardropsUrl || "",
+                            condition: d.condition || "new",
+                            status: "active" as const,
+                            stock: 1,
+                            gifts: [],
+                            shop: settings.shops?.[0]?.name || "msgrdrps",
+                          },
+                        ]);
+                        setSelectedImportIds((prev) => {
+                          const next = new Set(prev);
+                          next.add(pid);
+                          return next;
+                        });
+                      },
+                      () => setStoreProgress((p) => ({ ...p, current: p.total })),
+                      (e) => alert(e),
+                      ab.signal
+                    );
                   } catch (err: unknown) {
                     if ((err as any)?.name === "AbortError") return;
                     alert("Hata: " + (err instanceof Error ? err.message : String(err)));
@@ -1495,67 +1513,39 @@ function SettingsTab() {
     setSyncing(true);
     let imported = 0;
     try {
-      const res = await fetch("/api/scrape-gardrops-store", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: draft.gardropsUrl }),
-      });
-      if (!res.ok) { alert("Sync hatası"); return; }
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let currentEvent = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop() || "";
-        for (const part of parts) {
-          if (!part) continue;
-          const lines = part.split("\n");
-          let dataLine = "";
-          for (const line of lines) {
-            if (line.startsWith("event: ")) currentEvent = line.slice(7);
-            else if (line.startsWith("data: ")) dataLine = line.slice(6);
-          }
-          if (!dataLine) continue;
-          try {
-            const ev = JSON.parse(dataLine);
-            if (currentEvent === "product") {
-              const d = ev.product;
-              const pid = Math.random().toString(36).slice(2, 10);
-              addProduct({
-                id: pid,
-                name: d.name || "",
-                price: d.price || "",
-                priceNum: d.priceNum || 0,
-                originalPriceNum: d.originalPriceNum || 0,
-                originalPrice: d.originalPrice || "",
-                discount: d.discount || 0,
-                hasDiscount: d.hasDiscount || false,
-                category: d.category || "",
-                description: d.description || "",
-                images: d.images || [],
-                gardropsUrl: d.gardropsUrl || "",
-                condition: d.condition || "new",
-                status: "active" as const,
-                stock: 1,
-                gifts: [],
-                shop: settings.shops?.[0]?.name || "msgrdrps",
-              });
-              imported++;
-            } else if (currentEvent === "done") {
-              const updated = { ...draft, lastSyncTimestamp: Date.now() };
-              setDraft(updated);
-              updateSettings(updated);
-            } else if (currentEvent === "error") {
-              alert(ev.error);
-            }
-          } catch {}
-        }
-      }
-      if (imported > 0) addToast(`${imported} ürün senkronize edildi`, "success");
+      await readGardropsStore(
+        draft.gardropsUrl,
+        (d) => {
+          const pid = Math.random().toString(36).slice(2, 10);
+          addProduct({
+            id: pid,
+            name: d.name || "",
+            price: d.price || "",
+            priceNum: d.priceNum || 0,
+            originalPriceNum: d.originalPriceNum || 0,
+            originalPrice: d.originalPrice || "",
+            discount: d.discount || 0,
+            hasDiscount: d.hasDiscount || false,
+            category: d.category || "",
+            description: d.description || "",
+            images: d.images || [],
+            gardropsUrl: d.gardropsUrl || "",
+            condition: d.condition || "new",
+            status: "active" as const,
+            stock: 1,
+            gifts: [],
+            shop: settings.shops?.[0]?.name || "msgrdrps",
+          });
+          imported++;
+        },
+        () => {
+          const updated = { ...draft, lastSyncTimestamp: Date.now() };
+          setDraft(updated);
+          updateSettings(updated);
+          if (imported > 0) addToast(`${imported} ürün senkronize edildi`, "success");
+        },
+        (e) => alert(e)
+      );
     } catch (err: unknown) {
       alert("Sync hatası: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -2249,64 +2239,39 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     if (!settings.autoSync) return;
     let running = true;
     const sync = async () => {
+      let imported = 0;
       try {
-        const res = await fetch("/api/scrape-gardrops-store", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: settings.gardropsUrl }),
-        });
-        if (!res.ok) return;
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buf = "";
-        let currentEvent = "";
-        let imported = 0;
-        while (running) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const parts = buf.split("\n\n");
-          buf = parts.pop() || "";
-          for (const part of parts) {
-            if (!part) continue;
-            const lines = part.split("\n");
-            let dataLine = "";
-            for (const line of lines) {
-              if (line.startsWith("event: ")) currentEvent = line.slice(7);
-              else if (line.startsWith("data: ")) dataLine = line.slice(6);
-            }
-            if (!dataLine) continue;
-            try {
-              const ev = JSON.parse(dataLine);
-              if (currentEvent === "product") {
-                const d = ev.product;
-                addProduct({
-                  id: Math.random().toString(36).slice(2, 10),
-                  name: d.name || "",
-                  price: d.price || "",
-                  priceNum: d.priceNum || 0,
-                  originalPriceNum: d.originalPriceNum || 0,
-                  originalPrice: d.originalPrice || "",
-                  discount: d.discount || 0,
-                  hasDiscount: d.hasDiscount || false,
-                  category: d.category || "",
-                  description: d.description || "",
-                  images: d.images || [],
-                  gardropsUrl: d.gardropsUrl || "",
-                  condition: d.condition || "new",
-                  status: "active" as const,
-                  stock: 1,
-                  gifts: [],
-                  shop: settings.shops?.[0]?.name || "msgrdrps",
-                });
-                imported++;
-              } else if (currentEvent === "done") {
-                updateSettings({ ...settings, lastSyncTimestamp: Date.now() });
-              }
-            } catch {}
-          }
-        }
-        if (imported > 0) addToast(`${imported} ürün senkronize edildi (otomatik)`, "success");
+        await readGardropsStore(
+          settings.gardropsUrl,
+          (d) => {
+            if (!running) return;
+            addProduct({
+              id: Math.random().toString(36).slice(2, 10),
+              name: d.name || "",
+              price: d.price || "",
+              priceNum: d.priceNum || 0,
+              originalPriceNum: d.originalPriceNum || 0,
+              originalPrice: d.originalPrice || "",
+              discount: d.discount || 0,
+              hasDiscount: d.hasDiscount || false,
+              category: d.category || "",
+              description: d.description || "",
+              images: d.images || [],
+              gardropsUrl: d.gardropsUrl || "",
+              condition: d.condition || "new",
+              status: "active" as const,
+              stock: 1,
+              gifts: [],
+              shop: settings.shops?.[0]?.name || "msgrdrps",
+            });
+            imported++;
+          },
+          () => {
+            if (running) updateSettings({ ...settings, lastSyncTimestamp: Date.now() });
+            if (imported > 0) addToast(`${imported} ürün senkronize edildi (otomatik)`, "success");
+          },
+          () => {}
+        );
       } catch {}
     };
     const id = setInterval(sync, settings.syncIntervalMs);

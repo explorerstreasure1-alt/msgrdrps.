@@ -7,6 +7,7 @@ import webpush from "web-push";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
+const isVercel = !!process.env.VERCEL;
 
 webpush.setVapidDetails(
   "mailto:admin@msgrdrps.com",
@@ -18,18 +19,31 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-/* ---------- In-memory order persistence ---------- */
-const DATA_DIR = path.join(__dirname, "..", "data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+/* ---------- Storage: in-memory (Vercel) or file (local) ---------- */
+let memOrders = [];
+let memSubs = {};
 
 function loadOrders() {
-  try {
-    const raw = fs.readFileSync(path.join(DATA_DIR, "orders.json"), "utf-8");
-    return JSON.parse(raw);
-  } catch { return []; }
+  if (isVercel) return memOrders;
+  const f = path.join(__dirname, "..", "data", "orders.json");
+  try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch { return []; }
 }
 function saveOrders(orders) {
-  fs.writeFileSync(path.join(DATA_DIR, "orders.json"), JSON.stringify(orders, null, 2));
+  if (isVercel) { memOrders = orders; return; }
+  const d = path.join(__dirname, "..", "data");
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  fs.writeFileSync(path.join(d, "orders.json"), JSON.stringify(orders, null, 2));
+}
+
+function loadSubs() {
+  if (isVercel) return memSubs;
+  const f = path.join(__dirname, "..", "data", "push-subs.json");
+  try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch { return {}; }
+}
+function saveSubs(subs) {
+  if (isVercel) { memSubs = subs; return; }
+  const f = path.join(__dirname, "..", "data", "push-subs.json");
+  fs.writeFileSync(f, JSON.stringify(subs, null, 2));
 }
 
 /* ---------- API: Gardrops scraping (single product) ---------- */
@@ -141,33 +155,58 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
     return res.json({ success: false, error: "Geçerli bir Gardrops mağaza URL'si girin." });
   }
 
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-  });
+  const isStream = !isVercel;
 
-  const sendEvent = (event, data) => {
-    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  };
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
+  async function scrapeProduct(productUrl) {
+    const pr = await fetch(productUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
     });
-    if (!response.ok) {
-      sendEvent("error", { error: `Mağazaya erişilemedi (${response.status})` });
-      res.end();
-      return;
-    }
-    const html = await response.text();
+    const pHtml = await pr.text();
+    const { load } = await import("cheerio");
+    const p$ = load(pHtml);
+    const name = p$('meta[property="og:title"]').attr("content") || "";
+    const desc = p$('meta[property="og:description"]').attr("content") || "";
+    const images = [];
+    p$('meta[property="og:image"]').each((_, el) => {
+      const src = p$(el).attr("content");
+      if (src) images.push(src);
+    });
+    let priceNum = 0;
+    const priceEl = p$('[class*="price"], [class*="fiyat"]').first();
+    if (priceEl.length) priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
+    return {
+      name: name.replace(/ \|.*$/, "").trim(),
+      price: priceNum ? `₺${priceNum}` : "",
+      priceNum,
+      description: desc || "",
+      category: detectCategory(name),
+      condition: "new",
+      images: images || [],
+      gardropsUrl: productUrl,
+      hasDiscount: false,
+      discount: 0,
+      originalPrice: "",
+      originalPriceNum: 0,
+    };
+  }
 
+  if (isStream) {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+    const sendEvent = (event, data) => {
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
     try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      });
+      if (!response.ok) { sendEvent("error", { error: `Mağazaya erişilemedi (${response.status})` }); res.end(); return; }
+      const html = await response.text();
       const { load } = await import("cheerio");
       const $ = load(html);
-
       const productCards = [];
       $('a[href*="/ilan/"], a[href*="/product/"], [class*="product-card"], [class*="urun"]').each((_, el) => {
         const href = $(el).attr("href");
@@ -176,71 +215,50 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
           if (!productCards.includes(fullUrl)) productCards.push(fullUrl);
         }
       });
-
-      if (productCards.length === 0) {
-        sendEvent("error", { error: "Mağazada ürün bulunamadı." });
-        res.end();
-        return;
-      }
-
-      const CHUNK_SIZE = 3;
+      if (productCards.length === 0) { sendEvent("error", { error: "Mağazada ürün bulunamadı." }); res.end(); return; }
       let imported = 0;
-      for (let i = 0; i < productCards.length; i += CHUNK_SIZE) {
-        const chunk = productCards.slice(i, i + CHUNK_SIZE);
-        const results = await Promise.allSettled(
-          chunk.map(async (productUrl) => {
-            const pr = await fetch(productUrl, {
-              headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-            });
-            const pHtml = await pr.text();
-            const p$ = load(pHtml);
-            const name = p$('meta[property="og:title"]').attr("content") || "";
-            const desc = p$('meta[property="og:description"]').attr("content") || "";
-            const images = [];
-            p$('meta[property="og:image"]').each((_, el) => {
-              const src = p$(el).attr("content");
-              if (src) images.push(src);
-            });
-            let priceNum = 0;
-            const priceEl = p$('[class*="price"], [class*="fiyat"]').first();
-            if (priceEl.length) priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
-            return { name, priceNum, images, description: desc, gardropsUrl: productUrl };
-          })
-        );
-
-        for (const result of results) {
-          if (result.status === "fulfilled" && result.value.name) {
-            const d = result.value;
-            sendEvent("product", {
-              product: {
-                name: d.name.replace(/ \|.*$/, "").trim(),
-                price: d.priceNum ? `₺${d.priceNum}` : "",
-                priceNum: d.priceNum,
-                description: d.description || "",
-                category: detectCategory(d.name),
-                condition: "new",
-                images: d.images || [],
-                gardropsUrl: d.gardropsUrl,
-                hasDiscount: false,
-                discount: 0,
-                originalPrice: "",
-                originalPriceNum: 0,
-              },
-            });
+      for (let i = 0; i < productCards.length; i += 3) {
+        const chunk = productCards.slice(i, i + 3);
+        const results = await Promise.allSettled(chunk.map(scrapeProduct));
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value.name) {
+            sendEvent("product", { product: r.value });
             imported++;
           }
         }
       }
-
       sendEvent("done", { imported });
-    } catch (parseErr) {
-      sendEvent("error", { error: "Sayfa ayrıştırılamadı: " + parseErr.message });
-    }
-  } catch (err) {
-    sendEvent("error", { error: err.message });
+    } catch (err) { sendEvent("error", { error: err.message }); }
+    res.end();
+  } else {
+    try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      });
+      if (!response.ok) return res.json({ success: false, error: `Mağazaya erişilemedi (${response.status})` });
+      const html = await response.text();
+      const { load } = await import("cheerio");
+      const $ = load(html);
+      const productCards = [];
+      $('a[href*="/ilan/"], a[href*="/product/"], [class*="product-card"], [class*="urun"]').each((_, el) => {
+        const href = $(el).attr("href");
+        if (href && (href.includes("/ilan/") || href.includes("/product/"))) {
+          const fullUrl = href.startsWith("http") ? href : `https://www.gardrops.com${href}`;
+          if (!productCards.includes(fullUrl)) productCards.push(fullUrl);
+        }
+      });
+      if (productCards.length === 0) return res.json({ success: false, error: "Mağazada ürün bulunamadı." });
+      const all = [];
+      for (let i = 0; i < productCards.length; i += 3) {
+        const chunk = productCards.slice(i, i + 3);
+        const results = await Promise.allSettled(chunk.map(scrapeProduct));
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value.name) all.push(r.value);
+        }
+      }
+      res.json({ success: true, products: all });
+    } catch (err) { res.json({ success: false, error: err.message }); }
   }
-
-  res.end();
 });
 
 /* ---------- API: Order sync (optional server-side) ---------- */
@@ -259,16 +277,6 @@ app.post("/api/orders", (req, res) => {
 });
 
 /* ---------- Push notification subscriptions ---------- */
-const SUB_FILE = path.join(DATA_DIR, "push-subs.json");
-
-function loadSubs() {
-  try { return JSON.parse(fs.readFileSync(SUB_FILE, "utf-8")); }
-  catch { return {}; }
-}
-function saveSubs(subs) {
-  fs.writeFileSync(SUB_FILE, JSON.stringify(subs, null, 2));
-}
-
 app.post("/api/push/subscribe", (req, res) => {
   const { userId, subscription } = req.body;
   if (!userId || !subscription) return res.json({ success: false, error: "Eksik bilgi." });
@@ -376,15 +384,22 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
   }
 });
 
-/* ---------- Serve static built files in production ---------- */
-const distPath = path.join(__dirname, "..", "dist");
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-  app.get("*", (_, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+/* ---------- Serve static built files in production (local only) ---------- */
+if (!isVercel) {
+  const distPath = path.join(__dirname, "..", "dist");
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get("*", (_, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+}
+
+/* ---------- Start server (local only) ---------- */
+if (!isVercel) {
+  app.listen(PORT, () => {
+    console.log(`🤎 MS Gardrops Server running on http://localhost:${PORT}`);
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`🤎 MS Gardrops Server running on http://localhost:${PORT}`);
-});
+export default app;
