@@ -105,7 +105,7 @@ function Hero() {
             Ucuzun En Kaliteli Hali
           </p>
           <h1 className="font-elegant text-5xl leading-tight text-stone-800 lg:text-7xl">
-            Gardrops İkinci El <br /> Özel Seçimleri
+            Gardrops <span className="whitespace-nowrap">İkinci El</span> <br /> Özel Seçimleri
           </h1>
           <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
             Zamansız ve sezonsuz ürünler... Sıfır ve ikinci el seçenekleri,
