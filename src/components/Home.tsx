@@ -366,7 +366,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     "default"
   );
   const [shopFilter, setShopFilter] = useState("all");
-  const [brandFilter, setBrandFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState<string[]>([]);
 
   // URL param parsing for product share links
   useEffect(() => {
@@ -424,7 +424,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       if (priceMin && p.priceNum < parseInt(priceMin)) return false;
       if (priceMax && p.priceNum > parseInt(priceMax)) return false;
       if (shopFilter !== "all" && (p.shop || "msgrdrps") !== shopFilter) return false;
-      if (brandFilter !== "all" && (p.brand || "") !== brandFilter) return false;
+      if (brandFilter.length > 0 && !brandFilter.includes(p.brand || "")) return false;
       return true;
     });
 
@@ -718,24 +718,47 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               </button>
             ))}
             {brands.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="h-4 w-px bg-stone-300"></span>
-                <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider whitespace-nowrap">Marka:</span>
-                <button
-                  onClick={() => setBrandFilter("all")}
-                  className={"rounded-full border px-2.5 py-1 text-[11px] font-medium transition whitespace-nowrap " + (brandFilter === "all" ? "border-stone-800 bg-stone-800 text-white" : "border-stone-300 text-stone-600 hover:border-stone-500")}
-                >
-                  Tümü
-                </button>
-                {brands.map((b) => (
+              <div className="flex items-start gap-2 flex-wrap">
+                <span className="h-4 w-px bg-stone-300 self-center"></span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Markalar:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {brands.map((b) => {
+                      const checked = brandFilter.includes(b);
+                      return (
+                        <label
+                          key={b}
+                          className={
+                            "flex items-center gap-1 cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition whitespace-nowrap select-none " +
+                            (checked
+                              ? "border-amber-700 bg-amber-50 text-amber-800"
+                              : "border-stone-300 text-stone-600 hover:border-stone-500")
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setBrandFilter((prev) =>
+                                prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]
+                              );
+                            }}
+                            className="h-3 w-3 rounded border-stone-400 accent-amber-700"
+                          />
+                          {b}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                {brandFilter.length > 0 && (
                   <button
-                    key={b}
-                    onClick={() => setBrandFilter(b)}
-                    className={"rounded-full border px-2.5 py-1 text-[11px] font-medium transition whitespace-nowrap " + (brandFilter === b ? "border-amber-700 bg-amber-700 text-white" : "border-stone-300 text-stone-600 hover:border-stone-500")}
+                    onClick={() => setBrandFilter([])}
+                    className="self-start mt-4 text-[10px] text-stone-400 underline underline-offset-2 hover:text-stone-600"
                   >
-                    {b}
+                    Temizle
                   </button>
-                ))}
+                )}
               </div>
             )}
           </div>
