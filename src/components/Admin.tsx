@@ -1152,7 +1152,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 }
 
 function MessagesTab() {
-  const { conversations, sendMessage, markRead, toggleBlock, setSeen } = useStore();
+  const { conversations, sendMessage, markRead, toggleBlock, setSeen, notifyUser } = useStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
@@ -1170,6 +1170,7 @@ function MessagesTab() {
   const send = (text: string, attachments?: Message["attachments"]) => {
     if (!active || (!text.trim() && (!attachments || attachments.length === 0))) return;
     sendMessage(active.id, "admin", text.trim(), active.name, attachments);
+    notifyUser(active.id, "MSgrdrps", text.trim().slice(0, 80) || "Size yeni bir mesaj var", "/");
   };
 
   const handleSend = () => {
@@ -1286,7 +1287,14 @@ function MessagesTab() {
                       : "border-stone-300 text-stone-600 hover:bg-stone-100")
                   }
                 >
-                  {active.blocked ? "Engeli Kaldır" : "Müşteriyi Engelle"}
+                  {active.blocked ? "Engeli Kaldır" : "Engelle"}
+                </button>
+                <button
+                  onClick={() => notifyUser(active.id, "MSgrdrps", "Size yeni bir mesajınız var 🤎", "/")}
+                  className="rounded-full border border-stone-300 px-3 py-1 text-[11px] font-medium text-stone-600 hover:bg-stone-100 transition"
+                  title="Müşteriye bildirim gönder"
+                >
+                  Bildirim Gönder
                 </button>
               </div>
             </div>

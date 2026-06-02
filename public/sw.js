@@ -1,4 +1,4 @@
-const CACHE = "msgrdrps-v2";
+const CACHE = "msgrdrps-v3";
 const ASSETS = [
   "/",
   "/index.html",
@@ -67,4 +67,33 @@ self.addEventListener("message", (e) => {
   if (e.data === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+self.addEventListener("push", (e) => {
+  let data = { title: "MSgrdrps", body: "", url: "/", icon: "/logo.png" };
+  try {
+    if (e.data) data = { ...data, ...e.data.json() };
+  } catch {}
+  const promise = self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: data.icon,
+    badge: data.icon,
+    data: { url: data.url },
+    vibrate: [200, 100, 200],
+    requireInteraction: true,
+  });
+  e.waitUntil(promise);
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || "/";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+      for (const c of clientsList) {
+        if (c.url === url && "focus" in c) return c.focus();
+      }
+      return clients.openWindow(url);
+    })
+  );
 });

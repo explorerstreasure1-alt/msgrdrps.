@@ -480,6 +480,9 @@ interface StoreCtx {
   rejectBid: (auctionId: string, bidId: string) => void;
   cancelAuction: (auctionId: string) => void;
   getAuctionBids: (auctionId: string) => Bid[];
+  // push notifications
+  subscribePush: (userId: string) => Promise<void>;
+  notifyUser: (userId: string, title: string, body: string, url?: string) => Promise<void>;
   // toasts
   toasts: ToastMsg[];
   addToast: (text: string, type?: ToastMsg["type"]) => void;
@@ -822,6 +825,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const subscribePush = async (userId: string) => {
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
+    try {
+      if (Notification.permission === "denied") return;
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
+      });
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, subscription }),
+      });
+      localStorage.setItem("pushSubscribed", userId);
+    } catch {}
+  };
+
+  const notifyUser = async (userId: string, title: string, body: string, url?: string) => {
+    try {
+      await fetch("/api/push/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, title, body, url }),
+      });
+    } catch {}
+  };
+
   const useFastShipping = (userId: string) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, fastShipping: false } : u))
@@ -1080,6 +1113,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         rejectBid,
         cancelAuction,
         getAuctionBids,
+        subscribePush,
+        notifyUser,
         toasts,
         addToast,
         dismissToast,

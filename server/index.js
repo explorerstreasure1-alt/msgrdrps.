@@ -3,13 +3,20 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import webpush from "web-push";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
 
+webpush.setVapidDetails(
+  "mailto:admin@msgrdrps.com",
+  "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
+  "ybJ8e6vUfj47VpZxr5eKbY04eZWuuyPrmpevz3pfQHE",
+);
+
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 /* ---------- In-memory order persistence ---------- */
 const DATA_DIR = path.join(__dirname, "..", "data");
@@ -223,6 +230,53 @@ app.post("/api/orders", (req, res) => {
     return res.json({ success: true, data: loadOrders() });
   }
   res.json({ success: false, error: "Geçersiz istek." });
+});
+
+/* ---------- Push notification subscriptions ---------- */
+const SUB_FILE = path.join(DATA_DIR, "push-subs.json");
+
+function loadSubs() {
+  try { return JSON.parse(fs.readFileSync(SUB_FILE, "utf-8")); }
+  catch { return {}; }
+}
+function saveSubs(subs) {
+  fs.writeFileSync(SUB_FILE, JSON.stringify(subs, null, 2));
+}
+
+app.post("/api/push/subscribe", (req, res) => {
+  const { userId, subscription } = req.body;
+  if (!userId || !subscription) return res.json({ success: false, error: "Eksik bilgi." });
+  const subs = loadSubs();
+  subs[userId] = subscription;
+  saveSubs(subs);
+  res.json({ success: true });
+});
+
+app.post("/api/push/unsubscribe", (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.json({ success: false, error: "Eksik bilgi." });
+  const subs = loadSubs();
+  delete subs[userId];
+  saveSubs(subs);
+  res.json({ success: true });
+});
+
+app.post("/api/push/notify", async (req, res) => {
+  const { userId, title, body, url } = req.body;
+  if (!userId) return res.json({ success: false, error: "Eksik bilgi." });
+  const subs = loadSubs();
+  const sub = subs[userId];
+  if (!sub) return res.json({ success: false, error: "Abone bulunamadı." });
+  try {
+    await webpush.sendNotification(sub, JSON.stringify({ title, body, url: url || "/" }));
+    res.json({ success: true });
+  } catch (err) {
+    if (err.statusCode === 410 || err.statusCode === 404) {
+      delete subs[userId];
+      saveSubs(subs);
+    }
+    res.json({ success: false, error: err.message });
+  }
 });
 
 /* ---------- Serve static built files in production ---------- */

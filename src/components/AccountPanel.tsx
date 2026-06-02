@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useStore } from "../lib/store";
 
 export default function AccountPanel({ onClose }: { onClose: () => void }) {
-  const { register, login, logout, currentUser, orders, cart } = useStore();
+  const { register, login, logout, currentUser, orders, cart, subscribePush } = useStore();
   const [mode, setMode] = useState<"login" | "register">(currentUser ? "login" : "register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,10 +18,12 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
       const u = register(name, email, password);
       if (!u) { setError("Bu e-posta zaten kayıtlı."); return; }
       setError("");
+      subscribePush(u.id);
     } else {
       const u = login(email, password);
       if (!u) { setError("E-posta veya şifre hatalı."); return; }
       setError("");
+      subscribePush(u.id);
     }
   };
 
