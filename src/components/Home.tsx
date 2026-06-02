@@ -183,14 +183,34 @@ function Hero() {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={handleMouseLeave}
           >
-            <img
-              key={heroImg}
-              src={heroImages[heroImg]}
-              alt="Koleksiyon"
-              className="aspect-[4/5] w-full object-cover transition-opacity duration-700"
-              style={{ transformStyle: "preserve-3d" }}
-              draggable={false}
-            />
+            <div className="relative aspect-[4/5] w-full overflow-hidden">
+              <img
+                src={heroImages[heroImg]}
+                alt="Koleksiyon"
+                className="absolute inset-0 h-full w-full object-cover transition-all duration-700"
+                style={{
+                  transformStyle: "preserve-3d",
+                  filter: "blur(0px)",
+                  opacity: 1,
+                }}
+                draggable={false}
+              />
+              {/* blur outgoing sibling */}
+              {heroImages.length > 1 && (
+                <img
+                  src={heroImages[(heroImg + 1) % heroImages.length]}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover transition-all duration-700"
+                  style={{
+                    transformStyle: "preserve-3d",
+                    filter: "blur(12px)",
+                    opacity: 0.5,
+                    scale: "1.08",
+                  }}
+                  draggable={false}
+                />
+              )}
+            </div>
             {/* Bottom gradient overlay */}
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           </div>
@@ -888,19 +908,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       <footer className="border-t border-stone-200 bg-[#efe5d4]">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center">
           <Logo className="h-32 sm:h-72" />
-          <p className="max-w-md text-sm text-stone-600">
-            Bej ve fil dişi tonlarında, zamansız giyim koleksiyonu. Gardrops
-            üzerinden güvenli ödeme ile en premium alışveriş deneyimi.
-          </p>
-          <a
-            href="https://www.gardrops.com/msgrdrps"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-stone-800 px-6 py-2 text-sm font-medium text-white hover:bg-stone-700"
-          >
-            Gardrops Mağazamız
-          </a>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
             <span>Ücretsiz Kargo</span>
             <span>•</span>
             <span>Güvenli Ödeme</span>

@@ -26,13 +26,16 @@ export default function ProductDetailPanel({
   const imgRef = useRef<HTMLDivElement>(null);
   const [lensPos, setLensPos] = useState({ x: 50, y: 50 });
   const [showLens, setShowLens] = useState(false);
+  const [touchZoom, setTouchZoom] = useState(false);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
     const rect = imgRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setLensPos({ x, y });
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    setLensPos({ x: Math.min(100, Math.max(0, x)), y: Math.min(100, Math.max(0, y)) });
   };
 
   const isFavorite = favorites.includes(product.id);
@@ -77,26 +80,41 @@ export default function ProductDetailPanel({
           <div
             ref={imgRef}
             onMouseMove={handleMouseMove}
+            onTouchMove={handleMouseMove}
             onMouseEnter={() => setShowLens(true)}
             onMouseLeave={() => setShowLens(false)}
-            className="group relative aspect-[5/3] flex-shrink-0 overflow-hidden bg-stone-100 cursor-crosshair"
+            onTouchStart={() => setTouchZoom(true)}
+            onTouchEnd={() => setTouchZoom(false)}
+            className="group relative aspect-[5/3] flex-shrink-0 overflow-hidden bg-stone-100 cursor-none select-none"
           >
             {product.images.length > 0 ? (
               <>
-                <div
-                  className="h-full w-full"
-                  style={{
-                    transform: showLens ? `scale(2.5)` : "scale(1)",
-                    transformOrigin: `${lensPos.x}% ${lensPos.y}%`,
-                    transition: showLens ? "none" : "transform 0.3s",
-                  }}
-                >
-                  <img
-                    src={product.images[selectedImage]}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                <img
+                  src={product.images[selectedImage]}
+                  alt={product.name}
+                  className="h-full w-full object-cover pointer-events-none"
+                />
+                {showLens && !touchZoom && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        transform: `scale(2.8)`,
+                        transformOrigin: `${lensPos.x}% ${lensPos.y}%`,
+                      }}
+                    >
+                      <img src={product.images[selectedImage]} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  </div>
+                )}
+                {touchZoom && (
+                  <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4" onClick={() => setTouchZoom(false)}>
+                    <div className="relative max-h-full max-w-full overflow-auto">
+                      <img src={product.images[selectedImage]} alt={product.name} className="max-h-[90vh] w-auto object-contain" />
+                      <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/60">Kapatmak için tıkla</p>
+                    </div>
+                  </div>
+                )}
                 {product.images.length > 1 && (
                   <>
                     <button
@@ -124,6 +142,12 @@ export default function ProductDetailPanel({
               </>
             ) : (
               <div className="flex h-full items-center justify-center text-stone-400">Görsel yok</div>
+            )}
+            {!showLens && !touchZoom && (
+              <div className="absolute bottom-1.5 right-1.5 rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white/70 pointer-events-none">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                Büyüt
+              </div>
             )}
           </div>
 
