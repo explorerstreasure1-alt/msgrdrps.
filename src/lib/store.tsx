@@ -42,6 +42,7 @@ export interface Review {
   rating: number;
   text: string;
   date: string;
+  image?: string;
 }
 
 export interface Message {
@@ -230,6 +231,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Ürün birebir aynısı geldi, kumaş kalitesi harika. Çok teşekkürler! 🤎",
     date: "2 hafta önce",
+    image: "https://images.pexels.com/photos/5103822/pexels-photo-5103822.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
   },
   {
     id: "r2",
@@ -237,6 +239,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Hızlı kargo, ilgili satıcı. Gardrops üzerinden alışveriş çok kolaydı.",
     date: "1 ay önce",
+    image: "https://images.pexels.com/photos/31071833/pexels-photo-31071833.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
   },
   {
     id: "r3",
@@ -244,6 +247,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Bej blazer tam istediğim gibiydi. Kesinlikle tekrar alışveriş yapacağım!",
     date: "1 ay önce",
+    image: "https://images.pexels.com/photos/8484085/pexels-photo-8484085.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
   },
   {
     id: "r4",
@@ -251,6 +255,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Renkler çok zarif, fotoğraftakiyle aynı. Teşekkürler güvenilir satıcı.",
     date: "2 ay önce",
+    image: "https://images.pexels.com/photos/8989582/pexels-photo-8989582.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
   },
 ];
 
@@ -483,6 +488,8 @@ interface StoreCtx {
   // push notifications
   subscribePush: (userId: string) => Promise<void>;
   notifyUser: (userId: string, title: string, body: string, url?: string) => Promise<void>;
+  // gardrops reviews
+  fetchGardropsReviews: (url: string) => Promise<void>;
   // toasts
   toasts: ToastMsg[];
   addToast: (text: string, type?: ToastMsg["type"]) => void;
@@ -855,6 +862,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
+  const fetchGardropsReviews = async (url: string) => {
+    try {
+      const res = await fetch("/api/scrape-gardrops-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.length) {
+        setReviews(json.data);
+        addToast(`${json.data.length} yorum Gardrops'tan çekildi`, "success");
+      } else {
+        addToast("Yorum bulunamadı", "info");
+      }
+    } catch {
+      addToast("Yorum çekilemedi", "error");
+    }
+  };
+
   const useFastShipping = (userId: string) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, fastShipping: false } : u))
@@ -1115,6 +1141,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         getAuctionBids,
         subscribePush,
         notifyUser,
+        fetchGardropsReviews,
         toasts,
         addToast,
         dismissToast,

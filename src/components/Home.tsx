@@ -127,9 +127,6 @@ function Hero() {
               <Stars rating={5} size={22} />
               <span className="text-base font-semibold text-stone-700">5.0</span>
             </div>
-            <span className="text-sm text-stone-500 flex items-center gap-1.5"><span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" /> +100 mutlu müşteri</span>
-            <span className="text-sm text-stone-500 hidden sm:inline">•</span>
-            <span className="text-sm text-stone-500 hidden sm:inline flex items-center gap-1.5"><span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" /> %100 güvenli ödeme</span>
           </div>
         </div>
 
@@ -221,8 +218,16 @@ function CategoriesStrip({ onPick }: { onPick: (c: string) => void }) {
 }
 
 function ReviewSection() {
-  const { reviews } = useStore();
+  const { reviews, settings, fetchGardropsReviews } = useStore();
+  const [fetching, setFetching] = useState(false);
   const featured = reviews.slice(0, 4);
+
+  const handleFetch = async () => {
+    if (fetching) return;
+    setFetching(true);
+    await fetchGardropsReviews(settings.gardropsUrl);
+    setFetching(false);
+  };
 
   return (
     <section id="yorumlar" className="bg-[#efe5d4] py-14" data-aos="fade-up">
@@ -239,27 +244,47 @@ function ReviewSection() {
             <span className="text-lg font-semibold text-stone-800">5.0</span>
             <span className="text-sm text-stone-500">({reviews.length} yorum)</span>
           </div>
+          <button
+            onClick={handleFetch}
+            disabled={fetching}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 hover:bg-white transition disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={fetching ? "animate-spin" : ""}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            {fetching ? "Çekiliyor..." : "Gardrops Yorumlarını Çek"}
+          </button>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((r) => (
+            {featured.map((r) => (
             <div
               key={r.id}
-              className="flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="flex flex-col rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg overflow-hidden"
             >
-              <Stars rating={r.rating} />
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">
-                "{r.text}"
-              </p>
-              <div className="mt-4 flex items-center gap-3 border-t border-stone-100 pt-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efe5d4] text-sm font-semibold text-stone-700">
-                  {r.author.charAt(0).toUpperCase()}
+              {r.image && (
+                <div className="h-44 w-full overflow-hidden bg-stone-100">
+                  <img
+                    src={r.image}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-stone-800">
-                    @{r.author}
-                  </p>
-                  <p className="text-xs text-stone-400">{r.date}</p>
+              )}
+              <div className="flex flex-col p-5 pt-4 flex-1">
+                <Stars rating={r.rating} />
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-600">
+                  "{r.text}"
+                </p>
+                <div className="mt-4 flex items-center gap-3 border-t border-stone-100 pt-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efe5d4] text-sm font-semibold text-stone-700">
+                    {r.author.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-stone-800">
+                      @{r.author}
+                    </p>
+                    <p className="text-xs text-stone-400">{r.date}</p>
+                  </div>
                 </div>
               </div>
             </div>
