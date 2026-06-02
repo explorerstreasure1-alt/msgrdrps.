@@ -46,6 +46,26 @@ function saveSubs(subs) {
   fs.writeFileSync(f, JSON.stringify(subs, null, 2));
 }
 
+/* ---------- Fetch with proxy fallback ---------- */
+const PROXY_URL = process.env.PROXY_URL || "";
+
+async function fetchWithFallback(url, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt === 0) {
+        const res = await fetch(url, { headers: BROWSER_HEADERS });
+        if (res.ok) return res;
+        if (res.status !== 403 && attempt === retries) return res;
+      } else if (PROXY_URL) {
+        const proxyTarget = PROXY_URL + encodeURIComponent(url);
+        const res = await fetch(proxyTarget, { headers: BROWSER_HEADERS });
+        if (res.ok) return res;
+      }
+    } catch {}
+  }
+  throw new Error(`Gardrops'a erişilemedi — Vercel IP'si engelleniyor. PROXY_URL ortam değişkeni ayarla veya local'de çalıştır.`);
+}
+
 /* ---------- Real browser-like headers ---------- */
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.165 Mobile Safari/537.36",
@@ -68,9 +88,11 @@ app.post("/api/scrape-gardrops", async (req, res) => {
     if (!url || !url.includes("gardrops.com/")) {
       return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
     }
-    const response = await fetch(url, { headers: BROWSER_HEADERS });
-    if (!response.ok) {
-      return res.json({ success: false, error: `Gardrops'a erişilemedi (${response.status})` });
+    let response;
+    try {
+      response = await fetchWithFallback(url);
+    } catch {
+      return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
     }
     const html = await response.text();
 
@@ -125,6 +147,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
           images: [],
           gardropsUrl: url,
           brand: "",
+        },
       });
     }
   } catch (err) {
@@ -192,7 +215,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
   const isStream = !isVercel;
 
   async function scrapeProduct(productUrl) {
-    const pr = await fetch(productUrl, { headers: BROWSER_HEADERS });
+    const pr = await fetchWithFallback(productUrl);
     const pHtml = await pr.text();
     const { load } = await import("cheerio");
     const p$ = load(pHtml);
@@ -233,7 +256,14 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
     try {
-      const response = await fetch(url, { headers: BROWSER_HEADERS });
+      let response;
+      try {
+        response = await fetchWithFallback(url);
+      } catch {
+        sendEvent("error", { error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
+        res.end();
+        return;
+      }
       if (!response.ok) { sendEvent("error", { error: `Mağazaya erişilemedi (${response.status})` }); res.end(); return; }
       const html = await response.text();
       const { load } = await import("cheerio");
@@ -263,7 +293,12 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
     res.end();
   } else {
     try {
-      const response = await fetch(url, { headers: BROWSER_HEADERS });
+      let response;
+      try {
+        response = await fetchWithFallback(url);
+      } catch {
+        return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
+      }
       if (!response.ok) return res.json({ success: false, error: `Mağazaya erişilemedi (${response.status})` });
       const html = await response.text();
       const { load } = await import("cheerio");
@@ -371,7 +406,12 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
     return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
   }
   try {
-    const response = await fetch(url, { headers: BROWSER_HEADERS });
+    let response;
+    try {
+      response = await fetchWithFallback(url);
+    } catch {
+      return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
+    }
     if (!response.ok) {
       return res.json({ success: false, error: `Gardrops'a erişilemedi (${response.status})` });
     }
