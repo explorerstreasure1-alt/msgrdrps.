@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ToastMsg } from "../components/Toast";
+import { apiFetch } from "./api";
 
 /* ---------------------------- Types ---------------------------- */
 
@@ -843,7 +844,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         userVisibleOnly: true,
         applicationServerKey: "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
       });
-      await fetch("/api/push/subscribe", {
+      await apiFetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, subscription }),
@@ -854,7 +855,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const notifyUser = async (userId: string, title: string, body: string, url?: string) => {
     try {
-      await fetch("/api/push/notify", {
+      await apiFetch("/api/push/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, title, body, url }),
@@ -864,7 +865,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const fetchGardropsReviews = async (url: string) => {
     try {
-      const res = await fetch("/api/scrape-gardrops-reviews", {
+      const res = await apiFetch("/api/scrape-gardrops-reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
