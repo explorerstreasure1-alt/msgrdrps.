@@ -84,11 +84,11 @@ export default function ChatWidget() {
         <div className="fixed bottom-24 right-5 z-50 flex h-[30rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#fdfaf4] shadow-2xl shadow-stone-900/20">
           {/* Header */}
           <div className="flex items-center gap-3 bg-stone-800 px-4 py-3 text-stone-50">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-200/90 text-base font-semibold text-stone-800">
-              A
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efe5d4] text-xs font-bold tracking-wider text-stone-700">
+              MS
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-semibold">ATÉLIER Destek</p>
+              <p className="text-sm font-semibold">MS Canlı Destek</p>
               <p className="text-[11px] text-stone-300">Genellikle hemen yanıtlar</p>
             </div>
           </div>

@@ -46,24 +46,37 @@ function saveSubs(subs) {
   fs.writeFileSync(f, JSON.stringify(subs, null, 2));
 }
 
-/* ---------- Fetch with proxy fallback ---------- */
+/* ---------- Fetch with multi-proxy fallback ---------- */
 const PROXY_URL = process.env.PROXY_URL || "";
+const FREE_PROXIES = [
+  "https://api.allorigins.win/raw?url=",
+  "https://r.jina.ai/http://",
+].filter(Boolean);
 
-async function fetchWithFallback(url, retries = 2) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
+async function fetchWithFallback(url, tries = 2 + FREE_PROXIES.length + (PROXY_URL ? 1 : 0)) {
+  // try 0: direct
+  if (tries > 0) {
     try {
-      if (attempt === 0) {
-        const res = await fetch(url, { headers: BROWSER_HEADERS });
-        if (res.ok) return res;
-        if (res.status !== 403 && attempt === retries) return res;
-      } else if (PROXY_URL) {
-        const proxyTarget = PROXY_URL + encodeURIComponent(url);
-        const res = await fetch(proxyTarget, { headers: BROWSER_HEADERS });
-        if (res.ok) return res;
-      }
+      const res = await fetch(url, { headers: BROWSER_HEADERS });
+      if (res.ok) return res;
+      if (res.status !== 403 && tries <= 1) throw new Error(`HTTP ${res.status}`);
     } catch {}
   }
-  throw new Error(`Gardrops'a erişilemedi — Vercel IP'si engelleniyor. PROXY_URL ortam değişkeni ayarla veya local'de çalıştır.`);
+  // try 1: user proxy
+  if (PROXY_URL) {
+    try {
+      const res = await fetch(PROXY_URL + encodeURIComponent(url), { headers: BROWSER_HEADERS });
+      if (res.ok) return res;
+    } catch {}
+  }
+  // tries 2+: free proxies
+  for (const proxy of FREE_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(url), { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(8000) });
+      if (res.ok) return res;
+    } catch {}
+  }
+  throw new Error(`Gardrops'a erişilemedi — Vercel IP'si engelleniyor.`);
 }
 
 /* ---------- Real browser-like headers ---------- */

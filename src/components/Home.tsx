@@ -568,23 +568,36 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
                 Tüm Ürünler
               </h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc]"
-                  title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
-                >
-                  <svg width="64" height="64" viewBox="1 1 22 22" fill="none" stroke="#a68958" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
-                    <circle cx="12" cy="12" r="10" fill="#f5efe4" stroke="none"/>
-                    <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a" strokeWidth="1.8"/>
-                    <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a" strokeWidth="1.8"/>
-                    <circle cx="12" cy="12" r="2.8" fill="#d4af37" stroke="#d4af37" strokeWidth="1.2"/>
-                    <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="#c4a99a" strokeWidth="1.2"/>
-                  </svg>
-                </button>
-                <div className="hidden sm:block">
-                  <p className="text-xs font-medium text-amber-700 uppercase tracking-wider whitespace-nowrap">Çarkı Çevir</p>
-                  <p className="text-[10px] text-stone-400">Ödül kazan!</p>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  {/* pulse ring */}
+                  <div className="absolute -inset-1 animate-ping rounded-full bg-amber-300/40" />
+                  <button
+                    onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
+                    className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-amber-300/70"
+                    title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
+                  >
+                    <svg width="64" height="64" viewBox="1 1 22 22" fill="none" stroke="#a68958" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-700 group-hover:rotate-[360deg]">
+                      <circle cx="12" cy="12" r="10" fill="#f5efe4" stroke="none"/>
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a" strokeWidth="1.8"/>
+                      <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a" strokeWidth="1.8"/>
+                      <circle cx="12" cy="12" r="2.8" fill="#d4af37" stroke="#d4af37" strokeWidth="1.2"/>
+                      <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="#c4a99a" strokeWidth="1.2"/>
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+                    </span>
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider whitespace-nowrap">Çarkı Çevir</p>
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a68958" strokeWidth="2" className="animate-pulse"><path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15" /></svg>
+                    <p className="text-[10px] text-stone-400">Ödül kazanmak için çevir!</p>
+                  </div>
                 </div>
               </div>
             </div>
