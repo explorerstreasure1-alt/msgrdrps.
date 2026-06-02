@@ -649,14 +649,15 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 mt-4 flex flex-col gap-2 border-y border-stone-200 bg-white/60 p-3 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap sm:mt-0" data-aos="fade-up" data-aos-delay="150">
-          <div className="flex gap-2 overflow-x-auto sm:flex-wrap" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="mb-8 mt-4 border-y border-stone-200 bg-white/60 px-3 py-3 sm:mt-0" data-aos="fade-up" data-aos-delay="150">
+          {/* Categories row */}
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:pb-3" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={
-                  "rounded-full px-4 py-2 text-xs font-medium transition " +
+                  "rounded-full px-4 py-2 text-xs font-medium transition whitespace-nowrap " +
                   (activeCategory === cat
                     ? "bg-stone-800 text-white shadow"
                     : "border border-stone-300 text-stone-600 hover:border-stone-500")
@@ -666,7 +667,8 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto sm:ml-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {/* Price, condition row */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-3" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">FİYAT:</span>
             <input
               value={priceMin}
@@ -717,51 +719,49 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 {c.label}
               </button>
             ))}
-            {brands.length > 0 && (
-              <div className="flex items-start gap-2 flex-wrap">
-                <span className="h-4 w-px bg-stone-300 self-center"></span>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Markalar:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {brands.map((b) => {
-                      const checked = brandFilter.includes(b);
-                      return (
-                        <label
-                          key={b}
-                          className={
-                            "flex items-center gap-1 cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition whitespace-nowrap select-none " +
-                            (checked
-                              ? "border-amber-700 bg-amber-50 text-amber-800"
-                              : "border-stone-300 text-stone-600 hover:border-stone-500")
-                          }
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setBrandFilter((prev) =>
-                                prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]
-                              );
-                            }}
-                            className="h-3 w-3 rounded border-stone-400 accent-amber-700"
-                          />
-                          {b}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
+          </div>
+          {/* Brands row */}
+          {brands.length > 0 && (
+            <div className="flex items-start gap-2 flex-wrap pt-1 border-t border-stone-200/60">
+              <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider pt-1">Markalar:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {brands.map((b) => {
+                  const checked = brandFilter.includes(b);
+                  return (
+                    <label
+                      key={b}
+                      className={
+                        "flex items-center gap-1 cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition whitespace-nowrap select-none " +
+                        (checked
+                          ? "border-amber-700 bg-amber-50 text-amber-800"
+                          : "border-stone-300 text-stone-600 hover:border-stone-500")
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setBrandFilter((prev) =>
+                            prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]
+                          );
+                        }}
+                        className="h-3 w-3 rounded border-stone-400 accent-amber-700"
+                      />
+                      {b}
+                    </label>
+                  );
+                })}
                 {brandFilter.length > 0 && (
                   <button
                     onClick={() => setBrandFilter([])}
-                    className="self-start mt-4 text-[10px] text-stone-400 underline underline-offset-2 hover:text-stone-600"
+                    className="text-[10px] text-stone-400 underline underline-offset-2 hover:text-stone-600 px-1"
                   >
                     Temizle
                   </button>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Grid */}
