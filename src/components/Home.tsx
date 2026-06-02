@@ -105,12 +105,11 @@ function Hero() {
             Ucuzun En Kaliteli Hali
           </p>
           <h1 className="font-elegant text-5xl leading-tight text-stone-800 lg:text-7xl">
-            Gardrops İkinci El <br /> Özel Seçki
+            Gardrops İkinci El <br /> Seçimleri
           </h1>
           <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
-            Nötr renklerde, zamansız parçalar. Sıfır ve ikinci el seçenekleri,
-            hediyeler ve çoklu ürün indirimleri ile en profesyonel alışveriş
-            deneyimi.
+            Gardrops'tan özenle seçtiğimiz ikinci el ürünler. Her bütçeye uygun,
+            kaliteli ve sürdürülebilir alışverişin en doğru adresi.
           </p>
           <div className="flex flex-wrap gap-4">
             <a href="#urunler" className="group relative overflow-hidden rounded-full bg-stone-800 px-8 py-4 text-base font-medium text-white shadow-lg shadow-stone-800/20 transition-all hover:shadow-xl hover:shadow-stone-800/30 hover:-translate-y-0.5">
