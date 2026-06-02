@@ -99,13 +99,13 @@ function Hero() {
       <div className="mx-auto grid max-w-7xl items-center gap-4 px-4 py-2 lg:grid-cols-2 lg:py-16">
         <div className="space-y-3 sm:space-y-6" data-aos="fade-right">
           <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em]">
-            ⋆ Yeni Sezon ⋆
+            ⋆ Yeni Fırsat Ürünleri ⋆
           </div>
           <p className="text-base uppercase tracking-[0.3em] text-amber-700">
-            Bej & Fil Dişi Koleksiyon
+            Ucuzun En Kaliteli Hali
           </p>
           <h1 className="font-elegant text-5xl leading-tight text-stone-800 lg:text-7xl">
-            Zarif Giyimin <br /> Sıcak Tonları
+            Gardrops İkinci El <br /> Özel Seçki
           </h1>
           <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
             Nötr renklerde, zamansız parçalar. Sıfır ve ikinci el seçenekleri,
@@ -304,6 +304,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [spinOpen, setSpinOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
   const [search, setSearch] = useState("");
@@ -324,6 +325,19 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [products]);
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    (installPrompt as any).prompt();
+    const result = await (installPrompt as any).userChoice;
+    if (result.outcome === "accepted") setInstallPrompt(null);
+  };
 
   useEffect(() => {
     if (menuOpen) { document.body.style.overflow = "hidden"; }
@@ -492,6 +506,12 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
                 Admin Paneli
               </button>
+              {installPrompt && (
+                <button onClick={() => { handleInstall(); setMenuOpen(false); }} className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-medium text-stone-700 hover:text-black hover:pl-2 transition-all duration-200 border-b border-stone-100 pb-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Uygulamayı İndir
+                </button>
+              )}
             </nav>
             <div className="mt-auto text-[10px] tracking-widest text-stone-400 uppercase">
               © 2026 msgrdrps.
