@@ -65,10 +65,23 @@ function Logo({ className }: { className?: string }) {
 }
 
 function Hero() {
+  const { products } = useStore();
   const cardRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const [heroImg, setHeroImg] = useState(0);
+
+  const heroImages = useMemo(() => {
+    const imgs = products.filter((p) => p.images?.length).flatMap((p) => p.images);
+    return imgs.length ? imgs : ["https://images.pexels.com/photos/7318681/pexels-photo-7318681.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=900"];
+  }, [products]);
+
+  useEffect(() => {
+    if (heroImages.length < 2) return;
+    const t = setInterval(() => setHeroImg((i) => (i + 1) % heroImages.length), 4000);
+    return () => clearInterval(t);
+  }, [heroImages.length]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = cardRef.current!.getBoundingClientRect();
@@ -96,36 +109,36 @@ function Hero() {
       <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-200/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-stone-300/20 blur-3xl" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-4 px-4 py-2 lg:grid-cols-2 lg:py-16">
-        <div className="space-y-3 sm:space-y-6" data-aos="fade-right">
-          <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-1.5 text-xs font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em]">
+      <div className="mx-auto grid max-w-7xl items-center gap-3 px-4 py-1 lg:grid-cols-2 lg:py-12">
+        <div className="space-y-2 sm:space-y-5" data-aos="fade-right">
+          <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-4 py-1 text-[10px] font-medium text-stone-700 shadow-sm uppercase tracking-[0.2em] sm:px-5 sm:py-1.5 sm:text-xs">
             ⋆ Yeni Fırsat Ürünleri ⋆
           </div>
-          <p className="text-base uppercase tracking-[0.3em] text-amber-700">
+          <p className="text-xs uppercase tracking-[0.3em] text-amber-700 sm:text-sm">
             Ucuzun En Kaliteli Hali
           </p>
-          <h1 className="font-elegant text-5xl leading-tight text-stone-800 lg:text-7xl">
+          <h1 className="font-elegant text-3xl leading-tight text-stone-800 sm:text-4xl lg:text-5xl">
             Gardrops <span className="whitespace-nowrap">İkinci El</span> <br /> Özel Seçimleri
           </h1>
-          <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
+          <p className="max-w-xl text-sm leading-relaxed text-stone-600 sm:text-base">
             Zamansız ve sezonsuz ürünler... Sıfır ve ikinci el seçenekleri,
             özel hediyeler ve çoklu ürün indirim fırsatlarıyla, ikinci el
             kültürünün en temiz hali.
           </p>
-          <div className="flex flex-wrap gap-4">
-            <a href="#urunler" className="group relative overflow-hidden rounded-full bg-stone-800 px-8 py-4 text-base font-medium text-white shadow-lg shadow-stone-800/20 transition-all hover:shadow-xl hover:shadow-stone-800/30 hover:-translate-y-0.5">
+          <div className="flex flex-wrap gap-3">
+            <a href="#urunler" className="group relative overflow-hidden rounded-full bg-stone-800 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-stone-800/20 transition-all hover:shadow-xl hover:shadow-stone-800/30 hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base">
               <span className="relative z-10">Alışverişe Başla</span>
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-stone-700 to-stone-600 transition-transform duration-300 group-hover:translate-x-0" />
             </a>
             <a href="https://www.gardrops.com/msgrdrps" target="_blank" rel="noreferrer"
-               className="group flex items-center gap-2 rounded-full border-2 border-stone-800 px-8 py-4 text-base font-medium text-stone-800 transition-all hover:bg-stone-800 hover:text-white hover:-translate-y-0.5 hover:shadow-lg">
+               className="group flex items-center gap-2 rounded-full border-2 border-stone-800 px-6 py-3 text-sm font-medium text-stone-800 transition-all hover:bg-stone-800 hover:text-white hover:-translate-y-0.5 hover:shadow-lg sm:px-8 sm:py-4 sm:text-base">
               Gardrops Mağazamız
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-3 pt-2 sm:gap-6 sm:pt-4">
-            <div className="flex items-center gap-2 bg-white/60 rounded-full px-4 py-2 shadow-sm">
-              <Stars rating={5} size={22} />
-              <span className="text-base font-semibold text-stone-700">5.0</span>
+          <div className="flex flex-wrap items-center gap-3 pt-1 sm:gap-6 sm:pt-3">
+            <div className="flex items-center gap-2 bg-white/60 rounded-full px-3 py-1.5 shadow-sm sm:px-4 sm:py-2">
+              <Stars rating={5} size={18} />
+              <span className="text-sm font-semibold text-stone-700 sm:text-base">5.0</span>
             </div>
           </div>
         </div>
@@ -171,15 +184,29 @@ function Hero() {
             onMouseLeave={handleMouseLeave}
           >
             <img
-              src="https://images.pexels.com/photos/7318681/pexels-photo-7318681.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=900"
+              key={heroImg}
+              src={heroImages[heroImg]}
               alt="Koleksiyon"
-              className="aspect-[4/5] w-full object-cover"
+              className="aspect-[4/5] w-full object-cover transition-opacity duration-700"
               style={{ transformStyle: "preserve-3d" }}
               draggable={false}
             />
             {/* Bottom gradient overlay */}
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           </div>
+
+          {/* Dots indicator */}
+          {heroImages.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
+              {heroImages.slice(0, Math.min(heroImages.length, 5)).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setHeroImg(i)}
+                  className={"h-1.5 rounded-full transition-all duration-300 " + (i === heroImg ? "w-4 bg-white" : "w-1.5 bg-white/50")}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Floating decorative dots */}
           <div className="pointer-events-none absolute -right-6 -top-6 z-20 h-12 w-12 rounded-full bg-amber-300/30 blur-sm animate-pulse" />
