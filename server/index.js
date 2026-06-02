@@ -81,7 +81,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
         price: priceNum ? `₺${priceNum}` : "",
         priceNum,
         description: desc || "",
-        category: category || "Diğer",
+        category: category || detectCategory(name),
         condition: isSecondHand ? "second" : "new",
         images: images.length ? images : [],
         gardropsUrl: url,
@@ -109,6 +109,32 @@ app.post("/api/scrape-gardrops", async (req, res) => {
 });
 
 /* ---------- API: Gardrops store import (SSE) ---------- */
+/* ---------- Category detection from product name ---------- */
+function detectCategory(name) {
+  const n = (name || "").toLowerCase();
+  const rules = [
+    { keywords: ["mont", "kaban", "yağmurluk", "trençkot"], cat: "Mont & Kaban" },
+    { keywords: ["ceket", "blazer"], cat: "Ceket & Blazer" },
+    { keywords: ["elbise", "roba", "abiye"], cat: "Elbise" },
+    { keywords: ["hırka", "triko", "kazak", "süveter", "yelek"], cat: "Triko & Hırka" },
+    { keywords: ["gömlek", "bluz", "tişört", "t-shirt", "tshirt", "crop", "body"], cat: "Gömlek & Bluz" },
+    { keywords: ["tulum", "salopet"], cat: "Tulum" },
+    { keywords: ["çanta", "sırt çantası", "omuz çantası", "el çantası"], cat: "Çanta" },
+    { keywords: ["kemer", "şal", "atkı", "ber", "eldiven", "takı", "bileklik", "kolye", "küpe"], cat: "Aksesuar" },
+    { keywords: ["etek"], cat: "Etek" },
+    { keywords: ["pantolon", "kot", "jean", "tayt", "jogger", "kargo"], cat: "Pantolon & Kot" },
+    { keywords: ["takım", "kostüm", "ikili"], cat: "Takım" },
+    { keywords: ["ayakkabı", "bot", "sneaker", "spor ayakkabı", "topuk", "loafer", "çizme"], cat: "Ayakkabı" },
+    { keywords: ["şort", "bermuda"], cat: "Şort" },
+    { keywords: ["gece", "pijama", "sabahlık", "bornoz"], cat: "Ev & Pijama" },
+    { keywords: ["sweat", "hoodie", "kapüşonlu", "eşofman"], cat: "Sweat & Hoodie" },
+  ];
+  for (const r of rules) {
+    if (r.keywords.some((k) => n.includes(k))) return r.cat;
+  }
+  return "Diğer";
+}
+
 app.post("/api/scrape-gardrops-store", async (req, res) => {
   const { url } = req.body;
   if (!url || !url.includes("gardrops.com/")) {
@@ -191,7 +217,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
                 price: d.priceNum ? `₺${d.priceNum}` : "",
                 priceNum: d.priceNum,
                 description: d.description || "",
-                category: "Diğer",
+                category: detectCategory(d.name),
                 condition: "new",
                 images: d.images || [],
                 gardropsUrl: d.gardropsUrl,
