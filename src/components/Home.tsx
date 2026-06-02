@@ -108,8 +108,9 @@ function Hero() {
             Gardrops İkinci El <br /> Özel Seçimleri
           </h1>
           <p className="max-w-xl text-lg text-stone-600 leading-relaxed">
-            Gardrops'tan özenle seçtiğimiz ikinci el ürünler. Her bütçeye uygun,
-            kaliteli ve sürdürülebilir alışverişin en doğru adresi.
+            Zamansız ve sezonsuz ürünler... Sıfır ve ikinci el seçenekleri,
+            özel hediyeler ve çoklu ürün indirim fırsatlarıyla, ikinci el
+            kültürünün en temiz hali.
           </p>
           <div className="flex flex-wrap gap-4">
             <a href="#urunler" className="group relative overflow-hidden rounded-full bg-stone-800 px-8 py-4 text-base font-medium text-white shadow-lg shadow-stone-800/20 transition-all hover:shadow-xl hover:shadow-stone-800/30 hover:-translate-y-0.5">
