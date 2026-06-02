@@ -339,6 +339,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     "default"
   );
   const [shopFilter, setShopFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("all");
 
   // URL param parsing for product share links
   useEffect(() => {
@@ -374,6 +375,10 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     () => ["Tümü", ...Array.from(new Set(products.map((p) => p.category)))],
     [products]
   );
+  const brands = useMemo(
+    () => Array.from(new Set(products.map((p) => p.brand).filter(Boolean))).sort(),
+    [products]
+  );
 
   const filteredProducts = useMemo(() => {
     let list = products.filter((p) => {
@@ -392,6 +397,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       if (priceMin && p.priceNum < parseInt(priceMin)) return false;
       if (priceMax && p.priceNum > parseInt(priceMax)) return false;
       if (shopFilter !== "all" && (p.shop || "msgrdrps") !== shopFilter) return false;
+      if (brandFilter !== "all" && (p.brand || "") !== brandFilter) return false;
       return true;
     });
 
@@ -405,7 +411,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
       });
     }
     return list;
-  }, [products, activeCategory, conditionFilter, search, sort, priceMin, priceMax, shopFilter]);
+  }, [products, activeCategory, conditionFilter, search, sort, priceMin, priceMax, shopFilter, brandFilter]);
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
@@ -562,19 +568,25 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               <h2 className="font-elegant text-3xl text-stone-800 sm:text-4xl">
                 Tüm Ürünler
               </h2>
-              <button
-                onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc]"
-                title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
-              >
-                <svg width="64" height="64" viewBox="1 1 22 22" fill="none" stroke="#a68958" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
-                  <circle cx="12" cy="12" r="10" fill="#f5efe4" stroke="none"/>
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a" strokeWidth="1.8"/>
-                  <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a" strokeWidth="1.8"/>
-                  <circle cx="12" cy="12" r="2.8" fill="#d4af37" stroke="#d4af37" strokeWidth="1.2"/>
-                  <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="#c4a99a" strokeWidth="1.2"/>
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { if (currentUser) setSpinOpen(true); else setAccountOpen(true); }}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5efe4] shadow-md hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group border border-[#e8dccc]"
+                  title={currentUser ? "Çarkı Çevir & Kazan" : "Giriş yapıp çarkı çevir!"}
+                >
+                  <svg width="64" height="64" viewBox="1 1 22 22" fill="none" stroke="#a68958" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-500 group-hover:rotate-180">
+                    <circle cx="12" cy="12" r="10" fill="#f5efe4" stroke="none"/>
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="#c4a99a" strokeWidth="1.8"/>
+                    <path d="M12 6a6 6 0 0 1 6 6" stroke="#c4a99a" strokeWidth="1.8"/>
+                    <circle cx="12" cy="12" r="2.8" fill="#d4af37" stroke="#d4af37" strokeWidth="1.2"/>
+                    <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="#c4a99a" strokeWidth="1.2"/>
+                  </svg>
+                </button>
+                <div className="hidden sm:block">
+                  <p className="text-xs font-medium text-amber-700 uppercase tracking-wider whitespace-nowrap">Çarkı Çevir</p>
+                  <p className="text-[10px] text-stone-400">Ödül kazan!</p>
+                </div>
+              </div>
             </div>
             <p className="mt-2 text-xs text-stone-500">
               {filteredProducts.length} ürün listeleniyor
@@ -665,6 +677,22 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 {c.label}
               </button>
             ))}
+            {brands.length > 0 && (
+              <>
+                <span className="h-4 w-px bg-stone-300"></span>
+                <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">MARKA:</span>
+                <select
+                  value={brandFilter}
+                  onChange={(e) => setBrandFilter(e.target.value)}
+                  className="rounded-full border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-stone-500"
+                >
+                  <option value="all">Tümü</option>
+                  {brands.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
         </div>
 

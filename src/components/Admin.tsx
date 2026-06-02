@@ -13,7 +13,6 @@ import { apiFetch } from "../lib/api";
 import { Stars } from "./Stars";
 import ImageDropzone from "./ImageDropzone";
 import { AuctionDetailPanel } from "./AuctionDetailPanel";
-import logoSrc from "../logo-admin.png";
 
 const ADMIN_PASSWORD = "tanem123+";
 
@@ -89,11 +88,9 @@ function Login({ onOk, onBack }: { onOk: () => void; onBack?: () => void }) {
           </button>
         )}
         <div className="mb-8 flex justify-center animate-[fadeIn_0.5s_ease-out]">
-          <img
-            src={logoSrc}
-            alt="MS"
-            className="h-50 w-auto object-contain"
-          />
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#efe5d4] shadow-inner">
+            <span className="font-serif text-4xl font-bold tracking-wider text-stone-700">MS</span>
+          </div>
         </div>
         <p className="text-center font-serif uppercase tracking-[0.15em] text-xs font-medium text-[#4A4641] mb-6">Admin Girişi</p>
         <input
@@ -2294,13 +2291,11 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     <div className="min-h-screen bg-[#f7f1e7]">
       <header className="border-b border-[#F1EDE9] bg-[#FDFBF7]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-2">
-            <img
-            src={logoSrc}
-            alt="MS"
-            className="h-16 w-auto object-contain sm:h-60"
-            />
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-stone-300">panel</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#efe5d4] shadow-inner sm:h-16 sm:w-16">
+              <span className="font-serif text-lg font-bold tracking-wider text-stone-700 sm:text-2xl">MS</span>
+            </div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-stone-400">admin</span>
           </div>
           <div className="flex items-center gap-3">
             <button

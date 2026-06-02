@@ -108,6 +108,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
         condition: isSecondHand ? "second" : "new",
         images: images.length ? images : [],
         gardropsUrl: url,
+        brand: detectBrand(name),
       };
 
       res.json({ success: true, data });
@@ -123,7 +124,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
           condition: "new",
           images: [],
           gardropsUrl: url,
-        },
+          brand: "",
       });
     }
   } catch (err) {
@@ -133,6 +134,30 @@ app.post("/api/scrape-gardrops", async (req, res) => {
 
 /* ---------- API: Gardrops store import (SSE) ---------- */
 /* ---------- Category detection from product name ---------- */
+function detectBrand(name) {
+  const n = (name || "").toLowerCase();
+  const brands = [
+    "zara", "mango", "hm", "h&m", "bershka", "pull&bear", "stradivarius",
+    "oysho", "massimo dutti", "koton", "defacto", "lc waikiki", "lcw",
+    "adidas", "nike", "puma", "converse", "vans", "reebok", "new balance",
+    "gucci", "prada", "louis vuitton", "chanel", "dior", "versace",
+    "armani", "boss", "ralph lauren", "tommy hilfiger", "calvin klein",
+    "levi's", "levis", "wrangler", "tom ford", "burberry", "coach",
+    "mk", "michael kors", "fossil", "swarovski", "polo", "benetton",
+    "damat", "tween", "ipekyol", "mudo", "colin's", "loft", "roma",
+    "derimod", "hotiç", "flo", "ayakkabı dünyası", "kızıl",
+    "merkad", "altınyıldız", "kiğılı", "vakko", "beymen", "network",
+    "mavi", "mudo concept", "diesel", "g star", "superstep",
+  ];
+  for (const b of brands) {
+    if (n.includes(b)) {
+      const normalized = b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
+      return normalized;
+    }
+  }
+  return "";
+}
+
 function detectCategory(name) {
   const n = (name || "").toLowerCase();
   const rules = [
@@ -194,6 +219,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
       discount: 0,
       originalPrice: "",
       originalPriceNum: 0,
+      brand: detectBrand(name),
     };
   }
 

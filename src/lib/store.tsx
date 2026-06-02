@@ -27,7 +27,8 @@ export interface Product {
   status: "active" | "out"; // active / stokta yok
   stock: number;
   gifts: Gift[];
-  shop?: string; // mağaza adı (çoklu mağaza için)
+  shop?: string;
+  brand?: string;
 }
 
 export interface Gift {
