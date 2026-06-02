@@ -46,6 +46,21 @@ function saveSubs(subs) {
   fs.writeFileSync(f, JSON.stringify(subs, null, 2));
 }
 
+/* ---------- Real browser-like headers ---------- */
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.165 Mobile Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+  "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Upgrade-Insecure-Requests": "1",
+  "DNT": "1",
+  "Connection": "keep-alive",
+};
+
 /* ---------- API: Gardrops scraping (single product) ---------- */
 app.post("/api/scrape-gardrops", async (req, res) => {
   try {
@@ -53,13 +68,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
     if (!url || !url.includes("gardrops.com/")) {
       return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
     }
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
-      },
-    });
+    const response = await fetch(url, { headers: BROWSER_HEADERS });
     if (!response.ok) {
       return res.json({ success: false, error: `Gardrops'a erişilemedi (${response.status})` });
     }
@@ -158,9 +167,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
   const isStream = !isVercel;
 
   async function scrapeProduct(productUrl) {
-    const pr = await fetch(productUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-    });
+    const pr = await fetch(productUrl, { headers: BROWSER_HEADERS });
     const pHtml = await pr.text();
     const { load } = await import("cheerio");
     const p$ = load(pHtml);
@@ -200,9 +207,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
     try {
-      const response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      });
+      const response = await fetch(url, { headers: BROWSER_HEADERS });
       if (!response.ok) { sendEvent("error", { error: `Mağazaya erişilemedi (${response.status})` }); res.end(); return; }
       const html = await response.text();
       const { load } = await import("cheerio");
@@ -232,9 +237,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
     res.end();
   } else {
     try {
-      const response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      });
+      const response = await fetch(url, { headers: BROWSER_HEADERS });
       if (!response.ok) return res.json({ success: false, error: `Mağazaya erişilemedi (${response.status})` });
       const html = await response.text();
       const { load } = await import("cheerio");
@@ -342,13 +345,7 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
     return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
   }
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "tr-TR,tr;q=0.9",
-      },
-    });
+    const response = await fetch(url, { headers: BROWSER_HEADERS });
     if (!response.ok) {
       return res.json({ success: false, error: `Gardrops'a erişilemedi (${response.status})` });
     }
