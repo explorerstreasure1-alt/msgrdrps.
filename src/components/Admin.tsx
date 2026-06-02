@@ -825,7 +825,8 @@ function ProductsTab() {
 
 /* -------- Reviews -------- */
 function ReviewsTab() {
-  const { reviews, addReview, updateReview, removeReview } = useStore();
+  const { reviews, addReview, updateReview, removeReview, settings, fetchGardropsReviews } = useStore();
+  const [fetching, setFetching] = useState(false);
   const [editing, setEditing] = useState<Review | null>(null);
   const [isNew, setIsNew] = useState(false);
 
@@ -851,6 +852,13 @@ function ReviewsTab() {
           className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
         >
           + Yorum Yaz
+        </button>
+        <button
+          onClick={async () => { setFetching(true); await fetchGardropsReviews(settings.gardropsUrl); setFetching(false); }}
+          disabled={fetching}
+          className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 transition disabled:opacity-50"
+        >
+          {fetching ? "Çekiliyor..." : "Gardrops'tan Çek"}
         </button>
       </div>
 
