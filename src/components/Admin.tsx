@@ -914,8 +914,10 @@ function ReviewsTab() {
   const [editing, setEditing] = useState<Review | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
+  const [aiReviewDrag, setAiReviewDrag] = useState(false);
 
   const handleAiReviews = async (file: File) => {
+    if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
@@ -986,15 +988,23 @@ function ReviewsTab() {
         </button>
       </div>
 
-      <div className="rounded-2xl border-2 border-dashed border-stone-300 p-5 text-center transition hover:border-stone-400">
+      <div
+        className={`rounded-2xl border-2 border-dashed p-5 text-center transition ${
+          aiReviewDrag ? "border-stone-800 bg-stone-100" : "border-stone-300 hover:border-stone-400"
+        }`}
+        onDragOver={(e) => { e.preventDefault(); setAiReviewDrag(true); }}
+        onDragLeave={() => setAiReviewDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setAiReviewDrag(false); const f = e.dataTransfer.files?.[0]; if (f) handleAiReviews(f); }}
+        onClick={() => document.getElementById("ai-reviews-input")?.click()}
+      >
         <input
           type="file"
           id="ai-reviews-input"
           accept="image/*"
           className="hidden"
+          capture="environment"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAiReviews(f); }}
         />
-        <label htmlFor="ai-reviews-input" className="cursor-pointer">
           {aiReviewLoading ? (
             <span className="text-sm text-stone-500">AI yorumlar okunuyor...</span>
           ) : (
@@ -1003,11 +1013,10 @@ function ReviewsTab() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
               </svg>
               <p className="mt-1 text-sm text-stone-500">
-                Yorum ekran görüntüsünü yüklemek için tıkla
+                Yorum ekran görüntüsünü sürükle bırak veya tıkla
               </p>
             </>
           )}
-        </label>
       </div>
 
       {editing && (
