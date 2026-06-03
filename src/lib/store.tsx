@@ -559,10 +559,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .then((json) => {
         if (!json.success || !json.data) return;
         const d = json.data;
-        if (d.products) setProducts(d.products);
-        if (d.reviews) setReviews(d.reviews);
+        if (d.products?.length) setProducts(d.products);
+        if (d.reviews?.length) setReviews(d.reviews);
         if (d.settings) setSettings(d.settings);
-        if (d.discounts) setDiscounts(d.discounts);
+        if (d.discounts?.length) setDiscounts(d.discounts);
       })
       .catch(() => {})
       .finally(() => setDataLoaded(true));
