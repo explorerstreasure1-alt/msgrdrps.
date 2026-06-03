@@ -74,7 +74,7 @@ function Hero() {
 
   const heroImages = useMemo(() => {
     const imgs = products.filter((p) => p.images?.length).flatMap((p) => p.images);
-    return imgs.length ? imgs : ["https://images.pexels.com/photos/7318681/pexels-photo-7318681.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=900"];
+    return imgs.length ? imgs : ["https://picsum.photos/seed/hero/900/900"];
   }, [products]);
 
   useEffect(() => {

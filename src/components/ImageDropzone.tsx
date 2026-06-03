@@ -27,17 +27,7 @@ export default function ImageDropzone({
     const urls: string[] = [];
     for (const f of arr) {
       const base64 = await fileToDataUrl(f);
-      try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
-        });
-        const json = await res.json();
-        if (json.success) urls.push(json.url);
-      } catch {
-        urls.push(base64);
-      }
+      urls.push(base64);
     }
     onChange([...images, ...urls]);
   };

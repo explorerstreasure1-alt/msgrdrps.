@@ -114,7 +114,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     description:
       "Yumuşacık kadife dokulu, zarif pembe ceket. %43 indirimle kaçırmayın!",
     images: [
-      "https://images.pexels.com/photos/5103822/pexels-photo-5103822.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/pembe-ceket/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "new",
@@ -134,7 +134,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     description:
       "Yumuşak dokulu, rahat kalıplı bej blazer ceket. Hem ofis hem günlük şıklık.",
     images: [
-      "https://images.pexels.com/photos/31071833/pexels-photo-31071833.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/bej-blazer/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "new",
@@ -155,7 +155,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     description:
       "Sıcacık fil dişi rengi örgü hırka. Sonbahar ve kış kombinlerinin vazgeçilmezi.",
     images: [
-      "https://images.pexels.com/photos/9603626/pexels-photo-9603626.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/triko-hirka/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "new",
@@ -172,7 +172,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     brand: "Zara",
     description: "Dökümlü saten kumaş, zarif krem tonu. Şık bir duruş için ideal.",
     images: [
-      "https://images.pexels.com/photos/5418894/pexels-photo-5418894.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/krem-gomlek/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "second",
@@ -189,7 +189,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     brand: "Mango",
     description: "Modern kesim bej tulum. Tek parça ile tamamlanmış zarif kombin.",
     images: [
-      "https://images.pexels.com/photos/8484085/pexels-photo-8484085.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/bej-tulum/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "new",
@@ -205,7 +205,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     category: "Aksesuar",
     description: "Zarif bej tonlu el çantası. Her kombini tamamlayan şık aksesuar.",
     images: [
-      "https://images.pexels.com/photos/8989582/pexels-photo-8989582.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/deri-canta/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "second",
@@ -222,7 +222,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     brand: "H&M",
     description: "Bej ve fil dişi tonlarında uyumlu ikili takım. Komple şıklık.",
     images: [
-      "https://images.pexels.com/photos/8483812/pexels-photo-8483812.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
+      "https://picsum.photos/seed/ikili-takim/800/1200",
     ],
     gardropsUrl: GARDROPS_DEFAULT,
     condition: "new",
@@ -239,7 +239,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Ürün birebir aynısı geldi, kumaş kalitesi harika. Çok teşekkürler! 🤎",
     date: "2 hafta önce",
-    image: "https://images.pexels.com/photos/5103822/pexels-photo-5103822.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
+    image: "https://picsum.photos/seed/pembe-ceket/200/160",
   },
   {
     id: "r2",
@@ -247,7 +247,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Hızlı kargo, ilgili satıcı. Gardrops üzerinden alışveriş çok kolaydı.",
     date: "1 ay önce",
-    image: "https://images.pexels.com/photos/31071833/pexels-photo-31071833.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
+    image: "https://picsum.photos/seed/bej-blazer/200/160",
   },
   {
     id: "r3",
@@ -255,7 +255,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Bej blazer tam istediğim gibiydi. Kesinlikle tekrar alışveriş yapacağım!",
     date: "1 ay önce",
-    image: "https://images.pexels.com/photos/8484085/pexels-photo-8484085.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
+    image: "https://picsum.photos/seed/bej-tulum/200/160",
   },
   {
     id: "r4",
@@ -263,7 +263,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     text: "Renkler çok zarif, fotoğraftakiyle aynı. Teşekkürler güvenilir satıcı.",
     date: "2 ay önce",
-    image: "https://images.pexels.com/photos/8989582/pexels-photo-8989582.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=160",
+    image: "https://picsum.photos/seed/deri-canta/200/160",
   },
 ];
 
