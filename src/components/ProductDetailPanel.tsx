@@ -296,21 +296,22 @@ export default function ProductDetailPanel({
                 </a>
               )}
               <div className="flex gap-2">
-              <button
-                onClick={handleAddToCart}
-                disabled={product.status === "out" || product.stock === 0}
-                className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-800 py-2.5 text-sm font-semibold text-white transition-all duration-500 hover:bg-[#d4a0a0] hover:shadow-[0_0_25px_6px_rgba(212,160,160,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-pink-500/0 via-pink-400/20 to-pink-500/0 transition-transform duration-500 group-hover:translate-x-full" />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></svg>
-                <span className="relative z-10">Sepete Ekle</span>
-              </button>
-              <button
-                onClick={() => { onClose(); onCartOpen?.(); }}
-                className="flex items-center justify-center rounded-full border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
-              >
-                Sepete Git
-              </button>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={product.status === "out" || product.stock === 0}
+                  className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-800 py-2.5 text-sm font-semibold text-white transition-all duration-500 hover:bg-[#d4a0a0] hover:shadow-[0_0_25px_6px_rgba(212,160,160,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-pink-500/0 via-pink-400/20 to-pink-500/0 transition-transform duration-500 group-hover:translate-x-full" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></svg>
+                  <span className="relative z-10">Sepete Ekle</span>
+                </button>
+                <button
+                  onClick={() => { onClose(); onCartOpen?.(); }}
+                  className="flex items-center justify-center rounded-full border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
+                >
+                  Sepete Git
+                </button>
+              </div>
             </div>
           </div>
         </div>
