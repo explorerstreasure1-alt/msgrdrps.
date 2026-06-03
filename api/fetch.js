@@ -1,5 +1,8 @@
 import { load } from "cheerio";
 
+const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN || "c6c8a8c8026e4bfea8ad5da8fe937adaedbf7fb3199";
+const SCRAPEDO_BASE = "https://api.scrape.do";
+
 const API_HEADERS = {
   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
   "Accept": "application/json, text/plain, */*",
@@ -128,6 +131,29 @@ function parseProductFromHTML($, targetUrl) {
   };
 }
 
+async function fetchViaScrapeDo(url) {
+  const proxyUrl = `${SCRAPEDO_BASE}?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}&device=desktop&geo=TR`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(proxyUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || text.length < 200 || text.includes("scrape.do")) return null;
+    return text;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 function mapApiToProduct(apiData, targetUrl) {
   const d = apiData.data || apiData;
   const priceNum = parseFloat(d.price || d.priceNum || 0);
@@ -180,14 +206,19 @@ export default async function handler(req, res) {
       }
     }
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12000);
-    const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!response.ok) {
-      return res.status(502).json({ success: false, error: `Gardrops'tan yanıt alınamadı (${response.status})` });
+    let html = await fetchViaScrapeDo(targetUrl);
+
+    if (!html) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!response.ok) {
+        return res.status(502).json({ success: false, error: `Gardrops'tan yanıt alınamadı (${response.status})` });
+      }
+      html = await response.text();
     }
-    const html = await response.text();
+
     if (!html || html.length < 200) {
       return res.status(502).json({ success: false, error: "Gardrops boş sayfa döndü" });
     }

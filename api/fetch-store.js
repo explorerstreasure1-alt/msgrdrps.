@@ -1,5 +1,28 @@
 import { load } from "cheerio";
 
+const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN || "c6c8a8c8026e4bfea8ad5da8fe937adaedbf7fb3199";
+const SCRAPEDO_BASE = "https://api.scrape.do";
+
+async function fetchViaScrapeDo(url) {
+  const proxyUrl = `${SCRAPEDO_BASE}?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}&device=desktop&geo=TR`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(proxyUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || text.length < 200 || text.includes("scrape.do")) return null;
+    return text;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 const API_HEADERS = {
   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
   "Accept": "application/json, text/plain, */*",
@@ -234,15 +257,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, products: apiProducts });
     }
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12000);
-    const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!response.ok) {
-      return res.status(502).json({ success: false, error: `Mağazaya erişilemedi (${response.status})` });
-    }
+    let html = await fetchViaScrapeDo(targetUrl);
 
-    const html = await response.text();
+    if (!html) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!response.ok) {
+        return res.status(502).json({ success: false, error: `Mağazaya erişilemedi (${response.status})` });
+      }
+      html = await response.text();
+    }
     const $ = load(html);
     const productCards = findProductLinks($);
 
