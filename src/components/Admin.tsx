@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   useStore,
   uid,
@@ -137,6 +137,7 @@ function emptyProduct(gardrops: string): Product {
     gifts: [],
     shop: "msgrdrps",
     brand: "",
+    gardropsStatus: "unknown",
   };
 }
 
@@ -153,13 +154,48 @@ function ProductsTab() {
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<Product[]>([]);
   const [selectedImportIds, setSelectedImportIds] = useState<Set<string>>(new Set());
-  const [storeProgress, setStoreProgress] = useState({ current: 0, total: 0 });
+  const [_storeProgress, setStoreProgress] = useState({ current: 0, total: 0 });
   const storeAbortRef = useRef<() => void>(() => {});
   // batch edit
   const [batchMode, setBatchMode] = useState(false);
   const [batchIds, setBatchIds] = useState<Set<string>>(new Set());
   const [batchAction, setBatchAction] = useState("");
   const [batchValue, setBatchValue] = useState("");
+  // gardrops status
+  const [checkingGardrops, setCheckingGardrops] = useState<Set<string>>(new Set());
+
+  const checkGardropsStatus = useCallback(async (product: Product) => {
+    if (!product.gardropsUrl || checkingGardrops.has(product.id)) return;
+    setCheckingGardrops((prev) => new Set(prev).add(product.id));
+    try {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 20000);
+      const res = await apiFetch("/api/gardrops-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "check", gardropsUrl: product.gardropsUrl }),
+        signal: ac.signal,
+      });
+      clearTimeout(timer);
+      const json = await res.json();
+      if (json.success) {
+        const status = json.status === "active" ? "active" : "sold";
+        updateProduct({ ...product, gardropsStatus: status, gardropsCheckedAt: Date.now() });
+      }
+    } catch {}
+    setCheckingGardrops((prev) => {
+      const next = new Set(prev);
+      next.delete(product.id);
+      return next;
+    });
+  }, [checkingGardrops, updateProduct]);
+
+  /* lazy-check visible products' Gardrops status on mount */
+  useEffect(() => {
+    const visible = products.filter((p) => p.gardropsUrl && (!p.gardropsStatus || p.gardropsStatus === "unknown"));
+    const toCheck = visible.slice(0, 20);
+    toCheck.forEach((p) => checkGardropsStatus(p));
+  }, []);
 
   const handleScrape = async () => {
     if (!editing || !editing.gardropsUrl.includes("gardrops.com/")) return;
@@ -257,6 +293,7 @@ function ProductsTab() {
       discount,
       hasDiscount,
       status: editing.stock <= 0 ? "out" : editing.status,
+      gardropsStatus: editing.gardropsUrl ? (editing.gardropsStatus || "active") : "unknown",
     };
     isNew ? addProduct(toSave) : updateProduct(toSave);
     setEditing(null);
@@ -320,6 +357,7 @@ function ProductsTab() {
               <option value="condition">Durum değiştir (Sıfır/İkinci El)</option>
               <option value="shop">Mağaza değiştir</option>
               <option value="status">Stok durumu değiştir</option>
+              <option value="gardrops-check">Gardrops durumu kontrol et</option>
               <option value="delete">Seçilenleri sil</option>
             </select>
             {batchAction === "category" && (
@@ -350,6 +388,13 @@ function ProductsTab() {
                   if (!confirm(`${batchIds.size} ürün silinecek. Emin misiniz?`)) return;
                   batchIds.forEach((id) => removeProduct(id));
                   addToast(`${batchIds.size} ürün silindi`, "info");
+                } else if (batchAction === "gardrops-check") {
+                  let checked = 0;
+                  products.filter((p) => batchIds.has(p.id)).forEach((p) => {
+                    checkGardropsStatus(p);
+                    checked++;
+                  });
+                  addToast(`${checked} ürün için Gardrops kontrolü başlatıldı`, "info");
                 } else if (batchValue) {
                   const patch: Partial<Product> = {};
                   if (batchAction === "category") patch.category = batchValue;
@@ -363,7 +408,7 @@ function ProductsTab() {
                 setBatchAction("");
                 setBatchValue("");
               }}
-              disabled={!batchAction || (batchAction !== "delete" && !batchValue)}
+              disabled={!batchAction || (batchAction !== "delete" && batchAction !== "gardrops-check" && !batchValue)}
               className="rounded-lg bg-stone-800 px-4 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
             >
               Uygula
@@ -687,7 +732,7 @@ function ProductsTab() {
                 />
               </div>
             )}
-            <div className="aspect-square w-20 shrink-0 overflow-hidden rounded-lg bg-[#F5F5F3]">
+            <div className="relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg bg-[#F5F5F3]">
               {p.images[0] ? (
                 <img src={p.images[0]} alt="" className="h-full w-full object-cover"
                   onError={(e) => {
@@ -701,6 +746,31 @@ function ProductsTab() {
                 <div className="flex h-full items-center justify-center">
                   <svg className="w-6 h-6 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
+              )}
+              {/* Gardrops status dot */}
+              {p.gardropsUrl && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); checkGardropsStatus(p); }}
+                  className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white shadow-sm"
+                  style={{
+                    backgroundColor:
+                      p.gardropsStatus === "active" ? "#22c55e" :
+                      p.gardropsStatus === "sold" ? "#ef4444" :
+                      checkingGardrops.has(p.id) ? "#fbbf24" : "#a8a29e",
+                  }}
+                  title={
+                    p.gardropsStatus === "active" ? "Gardrops'ta aktif" :
+                    p.gardropsStatus === "sold" ? "Gardrops'ta yayında değil" :
+                    checkingGardrops.has(p.id) ? "Kontrol ediliyor..." :
+                    "Durum bilinmiyor — tıkla kontrol et"
+                  }
+                >
+                  {checkingGardrops.has(p.id) ? (
+                    <span className="inline-block h-2 w-2 animate-ping rounded-full bg-white" />
+                  ) : (
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="white"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                  )}
+                </button>
               )}
             </div>
               <div className="flex flex-1 flex-col min-w-0">
@@ -814,6 +884,7 @@ function ProductsTab() {
                             stock: 1,
                             gifts: [],
                             shop: settings.shops?.[0]?.name || "msgrdrps",
+                            gardropsStatus: "active",
                           },
                         ]);
                         setSelectedImportIds((prev) => {
@@ -1674,6 +1745,7 @@ function SettingsTab() {
             stock: 1,
             gifts: [],
             shop: settings.shops?.[0]?.name || "msgrdrps",
+            gardropsStatus: "active",
           });
           imported++;
         },
@@ -2262,7 +2334,7 @@ function Field({
 
 /* -------- Siparişler -------- */
 function OrdersTab() {
-  const { orders, updateOrderStatus, products } = useStore();
+  const { orders, updateOrderStatus, updateOrder, products } = useStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const statusFlow: Order["status"][] = ["pending", "paid", "shipped", "delivered"];
@@ -2324,11 +2396,23 @@ function OrdersTab() {
                     <p className="font-medium text-stone-700 mb-1">Ürünler:</p>
                     {o.items.map((item, i) => {
                       const p = products.find((x) => x.id === item.productId);
+                      const gardropsUrl = item.gardropsUrl || p?.gardropsUrl || "";
                       return (
                         <div key={i} className="flex items-center gap-2 py-1">
                           {p?.images[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover bg-stone-100" />}
                           <span className="flex-1">{item.name} × {item.quantity}</span>
                           <span className="font-medium">₺{item.price * item.quantity}</span>
+                          {gardropsUrl && (
+                            <a
+                              href={gardropsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded border border-stone-300 px-2 py-0.5 text-[10px] text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                              title="Gardrops'ta aç"
+                            >
+                              G
+                            </a>
+                          )}
                         </div>
                       );
                     })}
@@ -2342,6 +2426,61 @@ function OrdersTab() {
                   {o.pointsUsed && <p>Puan harcandı: {o.pointsUsed}</p>}
                   {o.fastShippingUsed && <p>🚀 Hızlı gönderim</p>}
                   {o.giftClaimed && <p>🎁 Hediye: {o.giftClaimed}</p>}
+                  {/* Gardrops section */}
+                  {o.status === "paid" && (
+                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-700"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                          <span className="font-medium text-amber-800">Gardrops İşlemi</span>
+                        </div>
+                        {o.gardropsConfirmed ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">✓ Onaylandı</span>
+                        ) : (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Bekliyor</span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {o.items.map((item, i) => {
+                          const gardropsUrl = item.gardropsUrl || "";
+                          if (!gardropsUrl) return null;
+                          return (
+                            <a
+                              key={i}
+                              href={gardropsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => { e.stopPropagation(); }}
+                              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[11px] text-amber-800 hover:bg-amber-100"
+                            >
+                              {item.name} → Gardrops'ta Aç
+                            </a>
+                          );
+                        })}
+                        {!o.gardropsConfirmed && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); updateOrder(o.id, { gardropsConfirmed: true, gardropsConfirmedAt: Date.now() }); }}
+                            className="rounded-lg bg-stone-800 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-stone-700"
+                          >
+                            Gardrops Onayla
+                          </button>
+                        )}
+                        {o.gardropsConfirmed && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); updateOrder(o.id, { gardropsConfirmed: false, gardropsConfirmedAt: undefined }); }}
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50"
+                          >
+                            Geri Al
+                          </button>
+                        )}
+                      </div>
+                      {o.gardropsConfirmedAt && (
+                        <p className="mt-1.5 text-[10px] text-stone-400">
+                          Onay: {new Date(o.gardropsConfirmedAt).toLocaleString("tr-TR")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2402,6 +2541,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
               stock: 1,
               gifts: [],
               shop: settings.shops?.[0]?.name || "msgrdrps",
+              gardropsStatus: "active",
             });
             imported++;
           },

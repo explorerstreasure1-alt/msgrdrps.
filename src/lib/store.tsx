@@ -17,20 +17,22 @@ export interface Product {
   name: string;
   price: string;
   priceNum: number;
-  originalPriceNum?: number; // Eski fiyat (üstü çizili gösterilecek)
+  originalPriceNum?: number;
   originalPrice?: string;
-  discount?: number; // Uygulanan indirim oranı (%)
-  hasDiscount?: boolean; // Indirim aktif mi
+  discount?: number;
+  hasDiscount?: boolean;
   category: string;
   description: string;
   images: string[];
   gardropsUrl: string;
-  condition: "new" | "second"; // 0 = yeni, 2 = ikinci el
-  status: "active" | "out"; // active / stokta yok
+  condition: "new" | "second";
+  status: "active" | "out";
   stock: number;
   gifts: Gift[];
   shop?: string;
   brand?: string;
+  gardropsStatus?: "active" | "sold" | "unknown";
+  gardropsCheckedAt?: number;
 }
 
 export interface Gift {
@@ -125,6 +127,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     gifts: [
       { id: "g0", title: "Pembe Kılıf", stock: 5 },
     ],
+    gardropsStatus: "active",
   },
   {
     id: "p1",
@@ -146,6 +149,7 @@ const DEFAULT_PRODUCTS: Product[] = [
       { id: "g1", title: "Kumaş Bakım Seti", stock: 5 },
       { id: "g2", title: "Aksesuar Kılıfı", stock: 3 },
     ],
+    gardropsStatus: "active",
   },
   {
     id: "p2",
@@ -164,6 +168,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     status: "active",
     stock: 12,
     gifts: [],
+    gardropsStatus: "active",
   },
   {
     id: "p3",
@@ -181,6 +186,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     status: "active",
     stock: 3,
     gifts: [{ id: "g3", title: "Astar Bezi", stock: 0 }],
+    gardropsStatus: "active",
   },
   {
     id: "p4",
@@ -198,6 +204,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     status: "active",
     stock: 5,
     gifts: [{ id: "g4", title: "Kemer Hediyesi", stock: 4 }],
+    gardropsStatus: "active",
   },
   {
     id: "p5",
@@ -214,6 +221,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     status: "active",
     stock: 2,
     gifts: [],
+    gardropsStatus: "active",
   },
   {
     id: "p6",
@@ -231,6 +239,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     status: "active",
     stock: 6,
     gifts: [{ id: "g5", title: "Mini Şal", stock: 7 }],
+    gardropsStatus: "active",
   },
 ];
 
@@ -361,7 +370,7 @@ export interface UserGiftClaim {
 
 export interface Order {
   id: string;
-  items: { productId: string; quantity: number; price: number; name: string }[];
+  items: { productId: string; quantity: number; price: number; name: string; gardropsUrl?: string }[];
   total: number;
   date: number;
   status: "pending" | "paid" | "shipped" | "delivered";
@@ -370,6 +379,8 @@ export interface Order {
   pointsUsed?: number;
   fastShippingUsed?: boolean;
   giftClaimed?: string;
+  gardropsConfirmed?: boolean;
+  gardropsConfirmedAt?: number;
 }
 
 export interface SpinPrize {
@@ -459,6 +470,7 @@ interface StoreCtx {
   logout: () => void;
   placeOrder: (address: Order["shippingAddress"], options?: { total?: number; couponId?: string; pointsUsed?: number; fastShippingUsed?: boolean; giftIds?: string[] }) => string | null;
   updateOrderStatus: (orderId: string, status: Order["status"]) => void;
+  updateOrder: (orderId: string, patch: Partial<Order>) => void;
   // favorites & cart
   toggleFavorite: (id: string) => void;
   addToCart: (item: CartItem) => void;
@@ -551,7 +563,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [giftProductId, setGiftProductId] = useState<string>(() => load("giftProductId", ""));
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const syncTimer = useRef<ReturnType<typeof setTimeout>>();
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/db?_t=" + Date.now())
@@ -569,7 +581,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncToApi = useCallback(() => {
-    clearTimeout(syncTimer.current);
+    if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => {
       fetch("/api/db?_t=" + Date.now(), {
         method: "POST",
@@ -915,7 +927,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (json.success && json.data?.length) {
         setReviews((prev) => {
           const existingIds = new Set(prev.map((r) => r.id));
-          const newOnes = json.data.filter((r) => !existingIds.has(r.id));
+          const newOnes = json.data.filter((r: Review) => !existingIds.has(r.id));
           return [...newOnes, ...prev];
         });
         addToast(`${json.data.length} yorum Gardrops'tan çekildi`, "success");
@@ -1090,6 +1102,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addToast("Sipariş durumu güncellendi", "success");
   };
 
+  const updateOrder = (orderId: string, patch: Partial<Order>) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...patch } : o)));
+    addToast("Sipariş güncellendi", "success");
+  };
+
   const placeOrder = (address: Order["shippingAddress"], options?: { total?: number; couponId?: string; pointsUsed?: number; fastShippingUsed?: boolean; giftIds?: string[] }): string | null => {
     if (!currentUser || cart.length === 0) return null;
     const items: Order["items"] = [];
@@ -1099,7 +1116,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         addToast(p ? `"${p.name}" stokta yetersiz (kalan: ${p.stock})` : "Ürün bulunamadı", "error");
         return null;
       }
-      items.push({ productId: ci.productId, quantity: ci.quantity, price: p.priceNum, name: p.name });
+      const gardropsUrl = p.gardropsUrl || undefined;
+      items.push({ productId: ci.productId, quantity: ci.quantity, price: p.priceNum, name: p.name, gardropsUrl });
     }
     for (const ci of cart) {
       decrementStock(ci.productId, ci.quantity);
@@ -1111,6 +1129,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       pointsUsed: options?.pointsUsed,
       fastShippingUsed: options?.fastShippingUsed,
       giftClaimed: options?.giftIds?.length ? options.giftIds.join(", ") : undefined,
+      gardropsConfirmed: false,
     };
     setOrders((prev) => [...prev, order]);
     setCurrentUser((prev) => prev ? { ...prev, orderIds: [...prev.orderIds, order.id] } : prev);
@@ -1195,6 +1214,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         clearCart,
         updateOrderStatus,
+        updateOrder,
       }}
     >
       {children}
