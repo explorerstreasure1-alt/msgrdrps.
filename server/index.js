@@ -464,6 +464,9 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
   }
 });
 
+/* ---------- Health check (always responds, prevents Railway SIGTERM) ---------- */
+app.get("/api/health", (_, res) => res.json({ ok: true }));
+
 /* ---------- Image upload ---------- */
 const UPLOADS_DIR = path.join(path.dirname(DATA_DIR), "uploads");
 
@@ -491,13 +494,17 @@ app.post("/api/upload", async (req, res) => {
 if (!isVercel) {
   app.use("/uploads", express.static(UPLOADS_DIR));
   const distPath = path.join(__dirname, "..", "dist");
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    app.use((req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  app.use(express.static(distPath));
+  app.use((req, res) => {
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+    res.status(200).send("<h1>MSgrdrps</h1><p>Building...</p>");
+  });
 }
+
+/* ---------- Prevent uncaught crashes ---------- */
+process.on("uncaughtException", (err) => console.error("UNCAUGHT:", err));
+process.on("unhandledRejection", (err) => console.error("UNHANDLED:", err));
 
 /* ---------- Start server (local only) ---------- */
 if (!isVercel) {
