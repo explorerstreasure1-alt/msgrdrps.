@@ -837,7 +837,7 @@ function ProductsTab() {
                 disabled={importing || !importUrl.includes("gardrops.com/")}
                 className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap"
               >
-                {importing ? `Çekiliyor... ${storeProgress.current}/${storeProgress.total}` : "Ürünleri Getir"}
+                {importing ? `${imported.length} ürün bulundu...` : "Ürünleri Getir"}
               </button>
               {importing && (
                 <button

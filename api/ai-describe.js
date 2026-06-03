@@ -49,7 +49,7 @@ Döndüreceğin JSON formatı:
 
     const content = [
       { type: "text", text: prompt },
-      { type: "image_url", image_url: imageUrl.startsWith("http") ? imageUrl : imageUrl },
+      { type: "image_url", image_url: imageUrl },
     ];
 
     const ctrl = new AbortController();

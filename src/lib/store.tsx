@@ -913,7 +913,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
       const json = await res.json();
       if (json.success && json.data?.length) {
-        setReviews(json.data);
+        setReviews((prev) => {
+          const existingIds = new Set(prev.map((r) => r.id));
+          const newOnes = json.data.filter((r) => !existingIds.has(r.id));
+          return [...newOnes, ...prev];
+        });
         addToast(`${json.data.length} yorum Gardrops'tan çekildi`, "success");
       } else {
         addToast("Yorum bulunamadı", "info");
