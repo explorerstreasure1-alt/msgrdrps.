@@ -8,6 +8,7 @@ import webpush from "web-push";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
 const isVercel = !!process.env.VERCEL;
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 
 webpush.setVapidDetails(
   "mailto:admin@msgrdrps.com",
@@ -23,27 +24,30 @@ app.use(express.json({ limit: "10mb" }));
 let memOrders = [];
 let memSubs = {};
 
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
 function loadOrders() {
   if (isVercel) return memOrders;
-  const f = path.join(__dirname, "..", "data", "orders.json");
+  const f = path.join(DATA_DIR, "orders.json");
   try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch { return []; }
 }
 function saveOrders(orders) {
   if (isVercel) { memOrders = orders; return; }
-  const d = path.join(__dirname, "..", "data");
-  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-  fs.writeFileSync(path.join(d, "orders.json"), JSON.stringify(orders, null, 2));
+  ensureDataDir();
+  fs.writeFileSync(path.join(DATA_DIR, "orders.json"), JSON.stringify(orders, null, 2));
 }
 
 function loadSubs() {
   if (isVercel) return memSubs;
-  const f = path.join(__dirname, "..", "data", "push-subs.json");
+  const f = path.join(DATA_DIR, "push-subs.json");
   try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch { return {}; }
 }
 function saveSubs(subs) {
   if (isVercel) { memSubs = subs; return; }
-  const f = path.join(__dirname, "..", "data", "push-subs.json");
-  fs.writeFileSync(f, JSON.stringify(subs, null, 2));
+  ensureDataDir();
+  fs.writeFileSync(path.join(DATA_DIR, "push-subs.json"), JSON.stringify(subs, null, 2));
 }
 
 /* ---------- Fetch with multi-proxy fallback ---------- */
