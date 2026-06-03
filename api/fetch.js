@@ -48,6 +48,81 @@ function detectCategory(name) {
   return "Diğer";
 }
 
+function extractNextData(html) {
+  const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function extractFromNextData(nextData) {
+  try {
+    const props = nextData.props?.pageProps;
+    const product = props?.product || props?.listing || props?.item || {};
+    const name = product.title || product.name || "";
+    const description = product.description || product.desc || "";
+    const priceNum = parseFloat(product.price || product.priceNum || 0);
+    let images = [];
+    if (product.images && Array.isArray(product.images)) {
+      product.images.forEach((img) => {
+        if (typeof img === "string") images.push(img);
+        else if (img?.url || img?.src) images.push(img.url || img.src);
+      });
+    }
+    if (product.image) images.push(product.image);
+    if (product.cover_image) images.push(product.cover_image);
+    images = [...new Set(images.filter(Boolean))];
+    const category = product.category_name || product.category || "";
+    const brand = product.brand || product.brand_name || "";
+    const condition = (product.condition || "").includes("second") ? "second" : "new";
+    return {
+      name: name.replace(/ \|.*$/, "").trim(),
+      price: priceNum ? `₺${priceNum}` : "",
+      priceNum,
+      description: (description || "").replace(/<[^>]*>/g, ""),
+      category: category || "",
+      condition,
+      images,
+      brand: brand || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function extractFromHTML($) {
+  const name = $('meta[property="og:title"]').attr("content") || $("title").text() || "";
+  const description = $('meta[property="og:description"]').attr("content") || "";
+  const images = [];
+  $('meta[property="og:image"]').each((_, el) => {
+    const src = $(el).attr("content");
+    if (src) images.push(src);
+  });
+  let priceNum = 0;
+  const priceEl = $('[class*="price"], [class*="fiyat"], [data-testid*="price"]').first();
+  if (priceEl.length) {
+    priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
+  }
+  let category = "";
+  $('[class*="breadcrumb"] a, [class*="category"] a, nav a').each((_, el) => {
+    const t = $(el).text().trim();
+    if (t && !t.includes("Gardrops") && !t.includes("Anasayfa")) category = t;
+  });
+  const isSecondHand = $("body").text().toLowerCase().includes("ikinci el") || $("body").text().toLowerCase().includes("2.el");
+  const cleanName = name.replace(/ \|.*$/, "").trim();
+  return {
+    cleanName,
+    description,
+    images,
+    priceNum,
+    category,
+    isSecondHand,
+  };
+}
+
 export default async function handler(req, res) {
   console.log("SCRAPEDO_TOKEN durumu:", SCRAPEDO_TOKEN ? "Dolu (Mevcut)" : "Boş (Undefined)");
   res.setHeader("Access-Control-Allow-Credentials", true);
@@ -67,73 +142,67 @@ export default async function handler(req, res) {
     }
 
     const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(targetUrl)}&render=false`;
-    console.log("scrape.do istek gönderiliyor:", proxyUrl.replace(SCRAPEDO_TOKEN, "***"));
+    console.log("scrape.do istek:", proxyUrl.replace(SCRAPEDO_TOKEN, "***"));
 
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 30000);
+    const timer = setTimeout(() => ctrl.abort(), 25000);
     const response = await fetch(proxyUrl, { signal: ctrl.signal });
     clearTimeout(timer);
 
-    console.log("scrape.do HTTP durumu:", response.status);
+    console.log("scrape.do durum:", response.status);
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      console.log("scrape.do hata gövdesi:", body.slice(0, 500));
-      return res.status(502).json({ success: false, error: `scrape.do döndü ${response.status}: ${body.slice(0, 200)}` });
+      return res.status(502).json({ success: false, error: `scrape.do ${response.status}: ${body.slice(0, 200)}` });
     }
 
     const html = await response.text();
-    console.log("scrape.do yanıt boyutu:", html.length, "byte");
+    console.log("scrape.do boyut:", html.length, "byte");
 
     if (!html || html.length < 200) {
       return res.status(502).json({ success: false, error: "scrape.do boş sayfa döndü" });
     }
-
-    if (html.includes("cf-browser-verification") || html.includes("__cf_chl") || html.includes("cloudflare")) {
+    if (html.includes("cf-browser-verification") || html.includes("__cf_chl")) {
       return res.status(502).json({ success: false, error: "scrape.do Cloudflare'i geçemedi" });
     }
 
-    const $ = load(html);
-
-    const name = $('meta[property="og:title"]').attr("content") || $("title").text() || "";
-    const description = $('meta[property="og:description"]').attr("content") || "";
-
-    const images = [];
-    $('meta[property="og:image"]').each((_, el) => {
-      const src = $(el).attr("content");
-      if (src) images.push(src);
-    });
-
-    let priceNum = 0;
-    const priceEl = $('[class*="price"], [class*="fiyat"], [data-testid*="price"]').first();
-    if (priceEl.length) {
-      priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
+    /* 1. Önce __NEXT_DATA__ JSON'ı dene (en temiz) */
+    const nextData = extractNextData(html);
+    if (nextData) {
+      const parsed = extractFromNextData(nextData);
+      if (parsed && parsed.name) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            ...parsed,
+            category: parsed.category || detectCategory(parsed.name),
+            brand: parsed.brand || detectBrand(parsed.name),
+            gardropsUrl: targetUrl,
+          },
+        });
+      }
     }
 
-    let category = "";
-    $('[class*="breadcrumb"] a, [class*="category"] a, nav a').each((_, el) => {
-      const t = $(el).text().trim();
-      if (t && !t.includes("Gardrops") && !t.includes("Anasayfa")) category = t;
-    });
-
-    const isSecondHand = $("body").text().toLowerCase().includes("ikinci el") || $("body").text().toLowerCase().includes("2.el");
-    const cleanName = name.replace(/ \|.*$/, "").trim();
+    /* 2. Fallback: cheerio ile meta tag scraping */
+    const $ = load(html);
+    const h = extractFromHTML($);
+    const cleanName = h.cleanName || "";
 
     return res.status(200).json({
       success: true,
       data: {
         name: cleanName,
-        price: priceNum ? `₺${priceNum}` : "",
-        priceNum,
-        description: description || "",
-        category: category || detectCategory(cleanName),
-        condition: isSecondHand ? "second" : "new",
-        images: images.length ? images : [],
+        price: h.priceNum ? `₺${h.priceNum}` : "",
+        priceNum: h.priceNum,
+        description: h.description || "",
+        category: h.category || detectCategory(cleanName),
+        condition: h.isSecondHand ? "second" : "new",
+        images: h.images.length ? h.images : [],
         gardropsUrl: targetUrl,
         brand: detectBrand(cleanName),
       },
     });
   } catch (error) {
-    console.log("fetch.js catch:", error.message);
+    console.log("fetch.js HATA:", error.message, error.stack?.slice(0, 300));
     return res.status(500).json({ success: false, error: error.message });
   }
 }
