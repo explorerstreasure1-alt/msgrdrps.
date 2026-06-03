@@ -165,7 +165,7 @@ function ProductsTab() {
     setScraping(true);
     try {
       const ac = new AbortController();
-      const timer = setTimeout(() => ac.abort(), 30000);
+      const timer = setTimeout(() => ac.abort(), 60000);
       const res = await apiFetch("/api/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

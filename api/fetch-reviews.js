@@ -4,7 +4,7 @@ const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN;
 
 async function fetchViaScrapeDo(url) {
   if (!SCRAPEDO_TOKEN) return null;
-  const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
+  const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}&render=false`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000);
   try {

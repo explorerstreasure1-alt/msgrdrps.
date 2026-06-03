@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: "SCRAPEDO_TOKEN environment variable eksik" });
     }
 
-    const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(targetUrl)}&render=false`;
     console.log("scrape.do istek gönderiliyor:", proxyUrl.replace(SCRAPEDO_TOKEN, "***"));
 
     const ctrl = new AbortController();
