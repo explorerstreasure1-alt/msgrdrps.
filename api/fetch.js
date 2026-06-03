@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     console.log("scrape.do istek gönderiliyor:", proxyUrl.replace(SCRAPEDO_TOKEN, "***"));
 
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
+    const timer = setTimeout(() => ctrl.abort(), 30000);
     const response = await fetch(proxyUrl, { signal: ctrl.signal });
     clearTimeout(timer);
 

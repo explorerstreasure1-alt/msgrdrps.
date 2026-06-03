@@ -164,11 +164,15 @@ function ProductsTab() {
     if (!editing || !editing.gardropsUrl.includes("gardrops.com/")) return;
     setScraping(true);
     try {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 30000);
       const res = await apiFetch("/api/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetUrl: editing.gardropsUrl }),
+        signal: ac.signal,
       });
+      clearTimeout(timer);
       const json = await res.json();
       if (json.success && json.data) {
         const d = json.data;

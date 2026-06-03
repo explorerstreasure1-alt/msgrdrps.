@@ -6,7 +6,7 @@ async function fetchViaScrapeDo(url) {
   if (!SCRAPEDO_TOKEN) return null;
   const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
+  const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
     const res = await fetch(proxyUrl, { signal: ctrl.signal });
     clearTimeout(timer);
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       for (const apiUrl of storeApis) {
         try {
           const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 5000);
+          const timer = setTimeout(() => ctrl.abort(), 30000);
           const res = await fetch(apiUrl, { headers: API_HEADERS, signal: ctrl.signal });
           clearTimeout(timer);
           if (!res.ok) continue;
@@ -134,7 +134,7 @@ export default async function handler(req, res) {
     if (!html) {
       /* -------- ADIM 3: Direct HTML scrape (fallback) -------- */
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const timer = setTimeout(() => ctrl.abort(), 30000);
       const response = await fetch(url, { headers: HTML_HEADERS, signal: ctrl.signal });
       clearTimeout(timer);
       if (!response.ok) {
