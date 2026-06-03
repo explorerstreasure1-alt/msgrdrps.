@@ -14,7 +14,7 @@ if ("serviceWorker" in navigator) {
 // Only register SW in production (Express server, no port)
 if ("serviceWorker" in navigator && !location.hostname.includes("localhost") && !location.port) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
 

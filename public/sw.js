@@ -1,16 +1,6 @@
-const CACHE = "msgrdrps-v3";
-const ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/logo.png",
-  "/logo-admin.png",
-];
+const CACHE = "msgrdrps-v4";
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -18,27 +8,27 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    ).catch(() => {})
   );
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.hostname === "localhost" || url.hostname === "127.0.0.1") return;
+  if (e.request.method !== "GET") return;
 
   if (e.request.mode === "navigate") {
     e.respondWith(
       (async () => {
         try {
           const res = await fetch(e.request);
-          if (res.ok && res.type === "basic") {
-            const clone = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(e.request, clone));
-          }
           return res;
         } catch {
-          return caches.match("/index.html");
+          try {
+            const cached = await caches.match("/index.html");
+            if (cached) return cached;
+          } catch {}
+          return new Response("Offline", { status: 503 });
         }
       })()
     );
@@ -47,17 +37,15 @@ self.addEventListener("fetch", (e) => {
 
   e.respondWith(
     (async () => {
-      const cached = await caches.match(e.request);
-      if (cached) return cached;
       try {
         const res = await fetch(e.request);
-        if (res.ok && res.type === "basic") {
-          const clone = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(e.request, clone));
-        }
         return res;
       } catch {
-        return caches.match("/index.html");
+        try {
+          const cached = await caches.match(e.request);
+          if (cached) return cached;
+        } catch {}
+        return new Response("", { status: 408 });
       }
     })()
   );
