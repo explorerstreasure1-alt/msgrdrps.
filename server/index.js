@@ -25,8 +25,11 @@ let memOrders = [];
 let memSubs = {};
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 }
+
+// Create data dir on startup
+ensureDataDir();
 
 function loadOrders() {
   if (isVercel) return memOrders;
@@ -468,10 +471,12 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 /* ---------- Image upload ---------- */
-const UPLOADS_DIR = path.join(path.dirname(DATA_DIR), "uploads");
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(path.dirname(DATA_DIR), "uploads");
 
-if (!isVercel) {
-  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  if (!isVercel && !fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+} catch (e) {
+  console.error("Uploads dir not available:", e.message);
 }
 
 app.post("/api/upload", async (req, res) => {
@@ -483,7 +488,11 @@ app.post("/api/upload", async (req, res) => {
     const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
     const data = Buffer.from(matches[2], "base64");
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    fs.writeFileSync(path.join(UPLOADS_DIR, filename), data);
+    try {
+      fs.writeFileSync(path.join(UPLOADS_DIR, filename), data);
+    } catch {
+      return res.json({ success: false, error: "Dosya kaydedilemedi" });
+    }
     res.json({ success: true, url: `/uploads/${filename}` });
   } catch (err) {
     res.json({ success: false, error: err.message });
@@ -492,14 +501,14 @@ app.post("/api/upload", async (req, res) => {
 
 /* ---------- Serve static files ---------- */
 if (!isVercel) {
-  app.use("/uploads", express.static(UPLOADS_DIR));
+  try { app.use("/uploads", express.static(UPLOADS_DIR)); } catch {}
   const distPath = path.join(__dirname, "..", "dist");
-  app.use(express.static(distPath));
-  app.use((req, res) => {
-    const indexPath = path.join(distPath, "index.html");
-    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
-    res.status(200).send("<h1>MSgrdrps</h1><p>Building...</p>");
-  });
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.use((req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
 }
 
 /* ---------- Prevent uncaught crashes ---------- */
