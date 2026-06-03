@@ -31,6 +31,32 @@ function ensureDataDir() {
 // Create data dir on startup
 ensureDataDir();
 
+/* ---------- Store data (same as Vercel Blob api/db.js) ---------- */
+const STORE_FILE = path.join(DATA_DIR, "store.json");
+
+function loadStore() {
+  if (isVercel) return null;
+  try { return JSON.parse(fs.readFileSync(STORE_FILE, "utf-8")); } catch { return null; }
+}
+function saveStore(data) {
+  if (isVercel) return;
+  ensureDataDir();
+  fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
+}
+
+app.get("/api/db", (req, res) => {
+  const data = loadStore();
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.json({ success: true, data });
+});
+
+app.post("/api/db", (req, res) => {
+  const { data } = req.body;
+  if (!data) return res.status(400).json({ success: false, error: "data gerekli" });
+  saveStore(data);
+  res.json({ success: true, url: "local://store.json" });
+});
+
 function loadOrders() {
   if (isVercel) return memOrders;
   const f = path.join(DATA_DIR, "orders.json");
