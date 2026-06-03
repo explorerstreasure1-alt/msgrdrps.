@@ -1,31 +1,6 @@
 import { load } from "cheerio";
 
 const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN;
-const SCRAPEDO_BASE = "https://api.scrape.do";
-
-const API_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
-  "Accept": "application/json, text/plain, */*",
-  "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
-  "Origin": "https://www.gardrops.com",
-  "Referer": "https://www.gardrops.com/",
-};
-
-const HTML_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-  "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-  "Cache-Control": "no-cache",
-  "Pragma": "no-cache",
-  "Sec-Ch-Ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
-  "Sec-Ch-Ua-Mobile": "?0",
-  "Sec-Ch-Ua-Platform": '"Windows"',
-  "Sec-Fetch-Dest": "document",
-  "Sec-Fetch-Mode": "navigate",
-  "Sec-Fetch-Site": "none",
-  "Sec-Fetch-User": "?1",
-  "Upgrade-Insecure-Requests": "1",
-};
 
 function detectBrand(name) {
   const n = (name || "").toLowerCase();
@@ -73,115 +48,8 @@ function detectCategory(name) {
   return "Diğer";
 }
 
-function extractProductId(url) {
-  const match = url.match(/-(\d+)(?:\/|\?|\/?)($|#)/);
-  if (match) return match[1];
-  const fallback = url.match(/(\d{6,})(?:\/|\?|$)/);
-  return fallback ? fallback[1] : null;
-}
-
-async function fetchViaAPI(productId) {
-  const apis = [
-    `https://api.gardrops.com/v2/products/${productId}`,
-    `https://api.gardrops.com/v1/products/${productId}`,
-  ];
-  for (const apiUrl of apis) {
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 6000);
-      const res = await fetch(apiUrl, { headers: API_HEADERS, signal: ctrl.signal });
-      clearTimeout(timer);
-      if (!res.ok) continue;
-      const json = await res.json();
-      if (json && (json.name || json.title || json.data?.name)) return json;
-    } catch {}
-  }
-  return null;
-}
-
-function parseProductFromHTML($, targetUrl) {
-  const name = $('meta[property="og:title"]').attr("content") || $("title").text() || "";
-  const description = $('meta[property="og:description"]').attr("content") || "";
-  const images = [];
-  $('meta[property="og:image"]').each((_, el) => {
-    const src = $(el).attr("content");
-    if (src) images.push(src);
-  });
-  let priceNum = 0;
-  const priceEl = $('[class*="price"], [class*="fiyat"], [data-testid*="price"]').first();
-  if (priceEl.length) {
-    priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
-  }
-  let category = "";
-  $('[class*="breadcrumb"] a, [class*="category"] a, nav a').each((_, el) => {
-    const t = $(el).text().trim();
-    if (t && !t.includes("Gardrops") && !t.includes("Anasayfa")) category = t;
-  });
-  const isSecondHand = $('body').text().toLowerCase().includes("ikinci el") || $('body').text().toLowerCase().includes("2.el");
-  const cleanName = name.replace(/ \|.*$/, "").trim();
-  return {
-    name: cleanName,
-    price: priceNum ? `₺${priceNum}` : "",
-    priceNum,
-    description: description || "",
-    category: category || detectCategory(cleanName),
-    condition: isSecondHand ? "second" : "new",
-    images: images.length ? images : [],
-    gardropsUrl: targetUrl,
-    brand: detectBrand(cleanName),
-  };
-}
-
-async function fetchViaScrapeDo(url) {
-  if (!SCRAPEDO_TOKEN) return null;
-  const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
-  try {
-    const res = await fetch(proxyUrl, { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const text = await res.text();
-    if (!text || text.length < 200) return null;
-    if (text.includes("cf-browser-verification") || text.includes("cloudflare") || text.includes("__cf_chl")) return null;
-    return text;
-  } catch {
-    clearTimeout(timer);
-    return null;
-  }
-}
-
-function mapApiToProduct(apiData, targetUrl) {
-  const d = apiData.data || apiData;
-  const priceNum = parseFloat(d.price || d.priceNum || 0);
-  const name = (d.name || d.title || "").replace(/ \|.*$/, "").trim();
-  const images = [];
-  if (d.images && Array.isArray(d.images)) {
-    d.images.forEach((img) => {
-      if (typeof img === "string") images.push(img);
-      else if (img?.url || img?.src) images.push(img.url || img.src);
-    });
-  }
-  if (d.image) images.push(d.image);
-  if (d.image_url) images.push(d.image_url);
-  if (d.photo) images.push(d.photo);
-  if (d.cover_image) images.push(d.cover_image);
-  d.photos?.forEach((p) => { if (typeof p === "string") images.push(p); else if (p?.url) images.push(p.url); });
-  return {
-    name,
-    price: priceNum ? `₺${priceNum}` : "",
-    priceNum,
-    description: (d.description || d.desc || "").replace(/<[^>]*>/g, ""),
-    category: d.category_name || d.category || detectCategory(name),
-    condition: (d.condition || "").includes("second") ? "second" : "new",
-    images: [...new Set(images.filter(Boolean))],
-    gardropsUrl: targetUrl,
-    brand: d.brand || d.brand_name || detectBrand(name),
-  };
-}
-
 export default async function handler(req, res) {
-  console.log("SCRAPEDO_TOKEN durumu:", process.env.SCRAPEDO_TOKEN ? "Dolu (Mevcut)" : "Boş (Undefined)");
+  console.log("SCRAPEDO_TOKEN durumu:", SCRAPEDO_TOKEN ? "Dolu (Mevcut)" : "Boş (Undefined)");
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
@@ -194,48 +62,78 @@ export default async function handler(req, res) {
     if (!targetUrl || !targetUrl.includes("gardrops.com/")) {
       return res.status(400).json({ success: false, error: "Geçerli Gardrops URL'si girin" });
     }
-
-    /* -------- ADIM 1: Gardrops internal API -------- */
-    const productId = extractProductId(targetUrl);
-    if (!productId) {
-      return res.status(400).json({ success: false, error: "Link içinden ürün ID'si bulunamadı" });
+    if (!SCRAPEDO_TOKEN) {
+      return res.status(500).json({ success: false, error: "SCRAPEDO_TOKEN environment variable eksik" });
     }
 
-    const apiData = await fetchViaAPI(productId);
-    if (apiData) {
-      return res.status(200).json({ success: true, data: mapApiToProduct(apiData, targetUrl) });
+    const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(targetUrl)}`;
+    console.log("scrape.do istek gönderiliyor:", proxyUrl.replace(SCRAPEDO_TOKEN, "***"));
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    const response = await fetch(proxyUrl, { signal: ctrl.signal });
+    clearTimeout(timer);
+
+    console.log("scrape.do HTTP durumu:", response.status);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.log("scrape.do hata gövdesi:", body.slice(0, 500));
+      return res.status(502).json({ success: false, error: `scrape.do döndü ${response.status}: ${body.slice(0, 200)}` });
     }
 
-    /* -------- ADIM 2: scrape.do proxy (Cloudflare bypass) -------- */
-    let html = await fetchViaScrapeDo(targetUrl);
-    if (html) {
-      const $ = load(html);
-      const data = parseProductFromHTML($, targetUrl);
-      return res.status(200).json({ success: true, data });
-    }
-
-    /* -------- ADIM 3: Direct HTML scrape (fallback) -------- */
-    {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 12000);
-      const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
-      clearTimeout(timer);
-      if (!response.ok) {
-        return res.status(502).json({ success: false, error: `Gardrops'tan yanıt alınamadı (${response.status})` });
-      }
-      html = await response.text();
-    }
+    const html = await response.text();
+    console.log("scrape.do yanıt boyutu:", html.length, "byte");
 
     if (!html || html.length < 200) {
-      return res.status(502).json({ success: false, error: "Gardrops boş sayfa döndü" });
+      return res.status(502).json({ success: false, error: "scrape.do boş sayfa döndü" });
     }
-    if (html.includes("cf-browser-verification") || html.includes("cloudflare")) {
-      return res.status(502).json({ success: false, error: "Cloudflare takıldı — proxy çalışmıyor." });
+
+    if (html.includes("cf-browser-verification") || html.includes("__cf_chl") || html.includes("cloudflare")) {
+      return res.status(502).json({ success: false, error: "scrape.do Cloudflare'i geçemedi" });
     }
+
     const $ = load(html);
-    const data = parseProductFromHTML($, targetUrl);
-    return res.status(200).json({ success: true, data });
+
+    const name = $('meta[property="og:title"]').attr("content") || $("title").text() || "";
+    const description = $('meta[property="og:description"]').attr("content") || "";
+
+    const images = [];
+    $('meta[property="og:image"]').each((_, el) => {
+      const src = $(el).attr("content");
+      if (src) images.push(src);
+    });
+
+    let priceNum = 0;
+    const priceEl = $('[class*="price"], [class*="fiyat"], [data-testid*="price"]').first();
+    if (priceEl.length) {
+      priceNum = parseFloat(priceEl.text().replace(/[^0-9,.]/g, "").replace(",", ".")) || 0;
+    }
+
+    let category = "";
+    $('[class*="breadcrumb"] a, [class*="category"] a, nav a').each((_, el) => {
+      const t = $(el).text().trim();
+      if (t && !t.includes("Gardrops") && !t.includes("Anasayfa")) category = t;
+    });
+
+    const isSecondHand = $("body").text().toLowerCase().includes("ikinci el") || $("body").text().toLowerCase().includes("2.el");
+    const cleanName = name.replace(/ \|.*$/, "").trim();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        name: cleanName,
+        price: priceNum ? `₺${priceNum}` : "",
+        priceNum,
+        description: description || "",
+        category: category || detectCategory(cleanName),
+        condition: isSecondHand ? "second" : "new",
+        images: images.length ? images : [],
+        gardropsUrl: targetUrl,
+        brand: detectBrand(cleanName),
+      },
+    });
   } catch (error) {
+    console.log("fetch.js catch:", error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
