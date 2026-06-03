@@ -1,4 +1,4 @@
-import { put, head, list } from "@vercel/blob";
+import { put, list } from "@vercel/blob";
 
 const STORE_FILE = "store.json";
 
