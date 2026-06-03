@@ -4,18 +4,16 @@ const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN || "c6c8a8c8026e4bfea8ad5da8fe
 const SCRAPEDO_BASE = "https://api.scrape.do";
 
 async function fetchViaScrapeDo(url) {
-  const proxyUrl = `${SCRAPEDO_BASE}?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}&device=desktop&geo=TR`;
+  const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const res = await fetch(proxyUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      signal: ctrl.signal,
-    });
+    const res = await fetch(proxyUrl, { signal: ctrl.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
     const text = await res.text();
-    if (!text || text.length < 200 || text.includes("scrape.do")) return null;
+    if (!text || text.length < 200) return null;
+    if (text.includes("cf-browser-verification") || text.includes("cloudflare") || text.includes("__cf_chl")) return null;
     return text;
   } catch {
     clearTimeout(timer);
@@ -228,6 +226,8 @@ export default async function handler(req, res) {
     }
 
     const username = extractUsername(targetUrl);
+
+    /* -------- ADIM 1: Gardrops internal API -------- */
     let apiProducts = [];
 
     if (username) {
@@ -257,9 +257,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, products: apiProducts });
     }
 
+    /* -------- ADIM 2: scrape.do proxy (Cloudflare bypass) -------- */
     let html = await fetchViaScrapeDo(targetUrl);
-
     if (!html) {
+      /* -------- ADIM 3: Direct HTML scrape (fallback) -------- */
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 12000);
       const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
@@ -269,6 +270,14 @@ export default async function handler(req, res) {
       }
       html = await response.text();
     }
+
+    if (!html || html.length < 200) {
+      return res.status(502).json({ success: false, error: "Gardrops boş sayfa döndü" });
+    }
+    if (html.includes("cf-browser-verification") || html.includes("cloudflare") || html.includes("__cf_chl")) {
+      return res.status(502).json({ success: false, error: "Cloudflare takıldı — proxy çalışmıyor." });
+    }
+
     const $ = load(html);
     const productCards = findProductLinks($);
 

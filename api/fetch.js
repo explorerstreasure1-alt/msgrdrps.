@@ -74,20 +74,21 @@ function detectCategory(name) {
 }
 
 function extractProductId(url) {
-  const match = url.match(/(\d+)(?:\?|$)/);
-  return match ? match[1] : null;
+  const match = url.match(/-(\d+)(?:\/|\?|\/?)($|#)/);
+  if (match) return match[1];
+  const fallback = url.match(/(\d{6,})(?:\/|\?|$)/);
+  return fallback ? fallback[1] : null;
 }
 
 async function fetchViaAPI(productId) {
   const apis = [
     `https://api.gardrops.com/v2/products/${productId}`,
     `https://api.gardrops.com/v1/products/${productId}`,
-    `https://public-api.gardrops.com/v2/products/${productId}`,
   ];
   for (const apiUrl of apis) {
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 5000);
+      const timer = setTimeout(() => ctrl.abort(), 6000);
       const res = await fetch(apiUrl, { headers: API_HEADERS, signal: ctrl.signal });
       clearTimeout(timer);
       if (!res.ok) continue;
@@ -132,21 +133,16 @@ function parseProductFromHTML($, targetUrl) {
 }
 
 async function fetchViaScrapeDo(url) {
-  const proxyUrl = `${SCRAPEDO_BASE}?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}&device=desktop&geo=TR`;
+  const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const res = await fetch(proxyUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      signal: ctrl.signal,
-    });
+    const res = await fetch(proxyUrl, { signal: ctrl.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
     const text = await res.text();
-    if (!text || text.length < 200 || text.includes("scrape.do")) return null;
+    if (!text || text.length < 200) return null;
+    if (text.includes("cf-browser-verification") || text.includes("cloudflare") || text.includes("__cf_chl")) return null;
     return text;
   } catch {
     clearTimeout(timer);
@@ -197,18 +193,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "Geçerli Gardrops URL'si girin" });
     }
 
+    /* -------- ADIM 1: Gardrops internal API -------- */
     const productId = extractProductId(targetUrl);
-
-    if (productId) {
-      const apiData = await fetchViaAPI(productId);
-      if (apiData) {
-        return res.status(200).json({ success: true, data: mapApiToProduct(apiData, targetUrl) });
-      }
+    if (!productId) {
+      return res.status(400).json({ success: false, error: "Link içinden ürün ID'si bulunamadı" });
     }
 
-    let html = await fetchViaScrapeDo(targetUrl);
+    const apiData = await fetchViaAPI(productId);
+    if (apiData) {
+      return res.status(200).json({ success: true, data: mapApiToProduct(apiData, targetUrl) });
+    }
 
-    if (!html) {
+    /* -------- ADIM 2: scrape.do proxy (Cloudflare bypass) -------- */
+    let html = await fetchViaScrapeDo(targetUrl);
+    if (html) {
+      const $ = load(html);
+      const data = parseProductFromHTML($, targetUrl);
+      return res.status(200).json({ success: true, data });
+    }
+
+    /* -------- ADIM 3: Direct HTML scrape (fallback) -------- */
+    {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 12000);
       const response = await fetch(targetUrl, { headers: HTML_HEADERS, signal: ctrl.signal });
@@ -221,6 +226,9 @@ export default async function handler(req, res) {
 
     if (!html || html.length < 200) {
       return res.status(502).json({ success: false, error: "Gardrops boş sayfa döndü" });
+    }
+    if (html.includes("cf-browser-verification") || html.includes("cloudflare")) {
+      return res.status(502).json({ success: false, error: "Cloudflare takıldı — proxy çalışmıyor." });
     }
     const $ = load(html);
     const data = parseProductFromHTML($, targetUrl);
