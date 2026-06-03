@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ message: "Sadece POST" });
 
   try {
-    const { imageUrl } = req.body;
+    const { imageUrl, type = "product" } = req.body;
     if (!imageUrl) {
       return res.status(400).json({ success: false, error: "imageUrl gerekli" });
     }
@@ -17,10 +17,26 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: "MISTRAL_API_KEY environment variable eksik" });
     }
 
-    const content = [
-      {
-        type: "text",
-        text: `Sen bir moda ürün asistanısın. Verilen görseldeki giyim/aksesuar ürününü analiz et ve **sadece JSON** döndür, başka hiçbir metin yazma.
+    const prompt = type === "reviews"
+      ? `Sen bir yorum okuma asistanısın. Verilen ekran görüntüsündeki TÜM yorumları oku ve **sadece JSON array** döndür, başka hiçbir metin yazma.
+
+Döndüreceğin JSON formatı:
+[
+  {
+    "author": "Yorumu yapan kullanıcı adı (varsa @ işareti olmadan, yoksa boş string)",
+    "rating": 5,
+    "text": "Yorum metni (Türkçe, aynen oku)",
+    "date": "Yorum tarihi (görselde yazıyorsa aynen al, yoksa boş string)"
+  }
+]
+
+Kurallar:
+- Görseldeki HER yorumu ayrı bir obje olarak ekle
+- Yorum metnini Türkçe karakterleri koruyarak aynen yaz
+- rating 1-5 arası, tam sayı olmalı
+- Eğer yorum metni çok uzunsa kısaltma, tamamını al
+- En az 1 yorum bulamazsan boş array döndür: []`
+      : `Sen bir moda ürün asistanısın. Verilen görseldeki giyim/aksesuar ürününü analiz et ve **sadece JSON** döndür, başka hiçbir metin yazma.
 
 Döndüreceğin JSON formatı:
 {
@@ -29,16 +45,15 @@ Döndüreceğin JSON formatı:
   "slogan": "Türkçe kısa slogan (max 40 karakter, çekici)",
   "category": "Ürün kategorisi (şunlardan biri: Elbise, Mont & Kaban, Triko & Hırka, Gömlek & Bluz, Pantolon & Kot, Etek, Sweat & Hoodie, Ceket & Blazer, Tulum, Takım, Ayakkabı, Çanta, Aksesuar, Ev & Pijama, Şort, Diğer)",
   "brand": "Marka adı (eğer görselde marka görünüyorsa yaz, yoksa boş string bırak)"
-}`,
-      },
-      {
-        type: "image_url",
-        image_url: imageUrl.startsWith("http") ? imageUrl : imageUrl,
-      },
+}`;
+
+    const content = [
+      { type: "text", text: prompt },
+      { type: "image_url", image_url: imageUrl.startsWith("http") ? imageUrl : imageUrl },
     ];
 
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 25000);
+    const timer = setTimeout(() => ctrl.abort(), 30000);
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -48,7 +63,7 @@ Döndüreceğin JSON formatı:
       body: JSON.stringify({
         model: "pixtral-large-latest",
         messages: [{ role: "user", content }],
-        max_tokens: 1000,
+        max_tokens: type === "reviews" ? 2000 : 1000,
         temperature: 0.1,
       }),
       signal: ctrl.signal,
@@ -65,10 +80,23 @@ Döndüreceğin JSON formatı:
 
     let parsed;
     try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
     } catch {
       return res.status(502).json({ success: false, error: "Mistral AI JSON döndürmedi", raw: text.slice(0, 500) });
+    }
+
+    if (type === "reviews") {
+      const reviews = Array.isArray(parsed) ? parsed : (parsed.reviews || parsed.data || []);
+      return res.status(200).json({
+        success: true,
+        data: reviews.map((r) => ({
+          author: (r.author || r.username || r.user || "").trim(),
+          rating: typeof r.rating === "number" ? r.rating : parseInt(r.rating, 10) || 5,
+          text: (r.text || r.comment || r.yorum || "").trim(),
+          date: (r.date || r.tarih || r.time || "").trim(),
+        })).filter((r) => r.text),
+      });
     }
 
     return res.status(200).json({

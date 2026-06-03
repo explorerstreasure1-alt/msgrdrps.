@@ -909,10 +909,50 @@ function ProductsTab() {
 
 /* -------- Reviews -------- */
 function ReviewsTab() {
-  const { reviews, addReview, updateReview, removeReview, settings, fetchGardropsReviews } = useStore();
+  const { reviews, addReview, updateReview, removeReview, settings, fetchGardropsReviews, addToast } = useStore();
   const [fetching, setFetching] = useState(false);
   const [editing, setEditing] = useState<Review | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
+
+  const handleAiReviews = async (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      setAiReviewLoading(true);
+      try {
+        const ac = new AbortController();
+        const timer = setTimeout(() => ac.abort(), 35000);
+        const res = await apiFetch("/api/ai-describe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: base64, type: "reviews" }),
+          signal: ac.signal,
+        });
+        clearTimeout(timer);
+        const json = await res.json();
+        if (json.success && json.data?.length) {
+          for (const r of json.data) {
+            addReview({
+              id: uid(),
+              author: r.author || "kullanici",
+              rating: r.rating || 5,
+              text: r.text || "",
+              date: r.date || "şimdi",
+            });
+          }
+          addToast?.(`${json.data.length} yorum AI ile eklendi`, "success");
+        } else {
+          addToast?.(json.error || "Yorum bulunamadı", "error");
+        }
+      } catch (err: unknown) {
+        addToast?.("AI bağlantı hatası: " + (err instanceof Error ? err.message : String(err)), "error");
+      } finally {
+        setAiReviewLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const startNew = () => {
     setEditing({ id: uid(), author: "", rating: 5, text: "", date: "şimdi" });
@@ -944,6 +984,30 @@ function ReviewsTab() {
         >
           {fetching ? "Çekiliyor..." : "Gardrops'tan Çek"}
         </button>
+      </div>
+
+      <div className="rounded-2xl border-2 border-dashed border-stone-300 p-5 text-center transition hover:border-stone-400">
+        <input
+          type="file"
+          id="ai-reviews-input"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAiReviews(f); }}
+        />
+        <label htmlFor="ai-reviews-input" className="cursor-pointer">
+          {aiReviewLoading ? (
+            <span className="text-sm text-stone-500">AI yorumlar okunuyor...</span>
+          ) : (
+            <>
+              <svg className="mx-auto h-8 w-8 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
+              </svg>
+              <p className="mt-1 text-sm text-stone-500">
+                Yorum ekran görüntüsünü yüklemek için tıkla
+              </p>
+            </>
+          )}
+        </label>
       </div>
 
       {editing && (
