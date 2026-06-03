@@ -1,8 +1,9 @@
 import { load } from "cheerio";
 
-const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN || "c6c8a8c8026e4bfea8ad5da8fe937adaedbf7fb3199";
+const SCRAPEDO_TOKEN = process.env.SCRAPEDO_TOKEN;
 
 async function fetchViaScrapeDo(url) {
+  if (!SCRAPEDO_TOKEN) return null;
   const proxyUrl = `https://api.scrape.do?token=${SCRAPEDO_TOKEN}&url=${encodeURIComponent(url)}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15000);
