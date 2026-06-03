@@ -554,7 +554,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const syncTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    fetch("/api/db")
+    fetch("/api/db?_t=" + Date.now())
       .then((r) => r.json())
       .then((json) => {
         if (!json.success || !json.data) return;
@@ -571,7 +571,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const syncToApi = useCallback(() => {
     clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => {
-      fetch("/api/db", {
+      fetch("/api/db?_t=" + Date.now(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
