@@ -20,7 +20,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data: null });
       }
       const blobUrl = blobs[0].url;
-      const response = await fetch(blobUrl);
+      const response = await fetch(blobUrl + "?_=" + Date.now());
       if (!response.ok) {
         return res.status(200).json({ success: true, data: null });
       }
