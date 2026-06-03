@@ -110,6 +110,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     discount: 43,
     hasDiscount: true,
     category: "Üst Giyim",
+    brand: "Zara",
     description:
       "Yumuşacık kadife dokulu, zarif pembe ceket. %43 indirimle kaçırmayın!",
     images: [
@@ -129,6 +130,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: "₺549",
     priceNum: 549,
     category: "Üst Giyim",
+    brand: "Mango",
     description:
       "Yumuşak dokulu, rahat kalıplı bej blazer ceket. Hem ofis hem günlük şıklık.",
     images: [
@@ -149,6 +151,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: "₺389",
     priceNum: 389,
     category: "Triko",
+    brand: "H&M",
     description:
       "Sıcacık fil dişi rengi örgü hırka. Sonbahar ve kış kombinlerinin vazgeçilmezi.",
     images: [
@@ -166,6 +169,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: "₺299",
     priceNum: 299,
     category: "Gömlek",
+    brand: "Zara",
     description: "Dökümlü saten kumaş, zarif krem tonu. Şık bir duruş için ideal.",
     images: [
       "https://images.pexels.com/photos/5418894/pexels-photo-5418894.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
@@ -182,6 +186,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: "₺459",
     priceNum: 459,
     category: "Tulum",
+    brand: "Mango",
     description: "Modern kesim bej tulum. Tek parça ile tamamlanmış zarif kombin.",
     images: [
       "https://images.pexels.com/photos/8484085/pexels-photo-8484085.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",
@@ -214,6 +219,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: "₺629",
     priceNum: 629,
     category: "Takım",
+    brand: "H&M",
     description: "Bej ve fil dişi tonlarında uyumlu ikili takım. Komple şıklık.",
     images: [
       "https://images.pexels.com/photos/8483812/pexels-photo-8483812.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=800",

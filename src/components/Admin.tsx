@@ -136,6 +136,7 @@ function emptyProduct(gardrops: string): Product {
     stock: 1,
     gifts: [],
     shop: "msgrdrps",
+    brand: "",
   };
 }
 
@@ -425,6 +426,15 @@ function ProductsTab() {
                     ))}
                   </select>
                 </Field>
+                <Field label="Marka">
+                  <input
+                    value={editing.brand || ""}
+                    onChange={(e) =>
+                      setEditing({ ...editing, brand: e.target.value })
+                    }
+                    className="inp"
+                  />
+                </Field>
               </div>
               <Field label="Açıklama">
                 <textarea
@@ -656,6 +666,11 @@ function ProductsTab() {
                   <span className="rounded bg-stone-100 px-1.5 py-[1px] text-[9px] font-medium text-stone-500">
                     {p.category}
                   </span>
+                  {p.brand && (
+                    <span className="rounded bg-violet-100 px-1.5 py-[1px] text-[9px] font-medium text-violet-700">
+                      {p.brand}
+                    </span>
+                  )}
                   {p.hasDiscount && p.originalPriceNum && p.originalPriceNum > p.priceNum && (
                     <span className="rounded bg-red-50 px-1.5 py-[1px] text-[9px] font-bold text-red-600">
                       %{p.discount || Math.round(((p.originalPriceNum - p.priceNum) / p.originalPriceNum) * 100)}

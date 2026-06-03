@@ -465,7 +465,7 @@ if (!isVercel) {
   const distPath = path.join(__dirname, "..", "dist");
   if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
-    app.get("*", (_, res) => {
+    app.get("/:path(.*)?", (_, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

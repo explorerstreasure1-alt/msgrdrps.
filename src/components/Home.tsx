@@ -423,7 +423,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     [products]
   );
   const brands = useMemo(
-    () => Array.from(new Set(products.map((p) => p.brand).filter(Boolean))).sort(),
+    () => Array.from(new Set(products.map((p) => p.brand).filter((b): b is string => !!b))).sort(),
     [products]
   );
 
