@@ -18,10 +18,10 @@ const ADMIN_PASSWORD = "tanem123+";
 
 /* Shared helper to read Gardrops store import (SSE local / JSON Vercel) */
 async function readGardropsStore(url: string, onProduct: (p: any) => void, onDone?: () => void, onError?: (e: string) => void, signal?: AbortSignal) {
-  const res = await apiFetch("/api/scrape-gardrops-store", {
+  const res = await apiFetch("/api/fetch-store", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ targetUrl: url }),
     signal,
   });
   if (!res.ok) { onError?.("Sunucu hatası"); return; }
@@ -164,10 +164,10 @@ function ProductsTab() {
     if (!editing || !editing.gardropsUrl.includes("gardrops.com/")) return;
     setScraping(true);
     try {
-      const res = await apiFetch("/api/scrape-gardrops", {
+      const res = await apiFetch("/api/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: editing.gardropsUrl }),
+        body: JSON.stringify({ targetUrl: editing.gardropsUrl }),
       });
       const json = await res.json();
       if (json.success && json.data) {

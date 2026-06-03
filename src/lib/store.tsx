@@ -872,7 +872,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const fetchGardropsReviews = async (url: string) => {
     try {
-      const res = await apiFetch("/api/scrape-gardrops-reviews", {
+      const res = await apiFetch("/api/fetch-reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),

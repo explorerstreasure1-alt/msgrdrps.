@@ -3,6 +3,11 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "framework": "vite",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
