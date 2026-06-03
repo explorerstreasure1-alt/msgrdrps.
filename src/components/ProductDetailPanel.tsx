@@ -286,7 +286,7 @@ export default function ProductDetailPanel({
             <div className="flex flex-col gap-2">
               {product.gardropsUrl && (
                 <a
-                  href={product.gardropsUrl}
+                  href="https://www.gardrops.com/cart"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-full border-2 border-emerald-600 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
