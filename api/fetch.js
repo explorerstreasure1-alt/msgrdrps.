@@ -180,6 +180,7 @@ function mapApiToProduct(apiData, targetUrl) {
 }
 
 export default async function handler(req, res) {
+  console.log("SCRAPEDO_TOKEN durumu:", process.env.SCRAPEDO_TOKEN ? "Dolu (Mevcut)" : "Boş (Undefined)");
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
