@@ -3,6 +3,8 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
+  useCallback,
   type ReactNode,
 } from "react";
 import type { ToastMsg } from "../components/Toast";
@@ -548,6 +550,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [userGifts, setUserGifts] = useState<UserGiftClaim[]>(() => load(K.userGifts, []));
   const [giftProductId, setGiftProductId] = useState<string>(() => load("giftProductId", ""));
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const syncTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    fetch("/api/db")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.success || !json.data) return;
+        const d = json.data;
+        if (d.products) setProducts(d.products);
+        if (d.reviews) setReviews(d.reviews);
+        if (d.settings) setSettings(d.settings);
+        if (d.discounts) setDiscounts(d.discounts);
+      })
+      .catch(() => {})
+      .finally(() => setDataLoaded(true));
+  }, []);
+
+  const syncToApi = useCallback(() => {
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: { products, reviews, settings, discounts },
+        }),
+      }).catch(() => {});
+    }, 2000);
+  }, [products, reviews, settings, discounts]);
+
+  useEffect(() => { if (dataLoaded) syncToApi(); }, [products, reviews, settings, discounts, dataLoaded, syncToApi]);
 
   useEffect(() => save(K.products, products), [products]);
   useEffect(() => save(K.reviews, reviews), [reviews]);
