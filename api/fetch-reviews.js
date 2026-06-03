@@ -1,9 +1,27 @@
 import { load } from "cheerio";
 
-const BROWSER_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+const API_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+  "Accept": "application/json, text/plain, */*",
   "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+  "Origin": "https://www.gardrops.com",
+  "Referer": "https://www.gardrops.com/",
+};
+
+const HTML_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+  "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
+  "Sec-Ch-Ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"Windows"',
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Upgrade-Insecure-Requests": "1",
 };
 
 const REVIEWERS = ["zeynep_m", "elifk", "merve_st", "ayca_d", "irem__", "ece_style", "bilge_h", "asli_c"];
@@ -29,6 +47,21 @@ function generateReviews(products) {
   }));
 }
 
+function findProducts($) {
+  const products = [];
+  $('a[href*="/ilan/"], a[href*="/product/"], [class*="product-card"], [class*="urun"]').each((_, el) => {
+    const $el = $(el);
+    const href = $el.attr("href");
+    const img = $el.find("img").first().attr("src") || $el.find("img").first().attr("data-src") || "";
+    const name = $el.find("img").first().attr("alt") || $el.text().trim().slice(0, 40) || "";
+    const fullUrl = href && href.startsWith("http") ? href : `https://www.gardrops.com${href}`;
+    if (fullUrl && img) {
+      products.push({ name, images: [img.startsWith("http") ? img : `https:${img}`], gardropsUrl: fullUrl });
+    }
+  });
+  return products;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -43,32 +76,49 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
     }
 
-    let response;
-    try {
-      response = await fetch(url, { headers: BROWSER_HEADERS });
-    } catch {
-      return res.status(502).json({ success: false, error: "Gardrops'a erişilemedi." });
+    const username = url.match(/gardrops\.com\/(?:magaza\/)?([^/?#]+)/)?.[1];
+    if (username) {
+      const storeApis = [
+        `https://api.gardrops.com/v2/users/${username}/products`,
+        `https://api.gardrops.com/v1/users/${username}/products`,
+      ];
+      for (const apiUrl of storeApis) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 5000);
+          const res = await fetch(apiUrl, { headers: API_HEADERS, signal: ctrl.signal });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const json = await res.json();
+          const list = Array.isArray(json) ? json : (json.data || json.products || json.items || []);
+          if (list.length) {
+            const mapped = list.map((p) => {
+              const d = p.data || p;
+              const images = [];
+              if (d.images?.length) d.images.forEach((i) => { if (typeof i === "string") images.push(i); });
+              if (d.image) images.push(d.image);
+              return { name: d.name || d.title || "", images: images.filter(Boolean), gardropsUrl: "" };
+            });
+            const reviews = generateReviews(mapped);
+            return res.status(200).json({ success: true, data: reviews });
+          }
+        } catch {}
+      }
     }
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const response = await fetch(url, { headers: HTML_HEADERS, signal: ctrl.signal });
+    clearTimeout(timer);
     if (!response.ok) {
       return res.status(502).json({ success: false, error: `Gardrops'a erişilemedi (${response.status})` });
     }
 
     const html = await response.text();
     const $ = load(html);
+    const products = findProducts($);
 
-    const products = [];
-    $('a[href*="/ilan/"], a[href*="/product/"], [class*="product-card"], [class*="urun"]').each((_, el) => {
-      const $el = $(el);
-      const href = $el.attr("href");
-      const img = $el.find("img").first().attr("src") || $el.find("img").first().attr("data-src") || "";
-      const name = $el.find("img").first().attr("alt") || $el.text().trim().slice(0, 40) || "";
-      const fullUrl = href && href.startsWith("http") ? href : `https://www.gardrops.com${href}`;
-      if (fullUrl && img) {
-        products.push({ name, images: [img.startsWith("http") ? img : `https:${img}`], gardropsUrl: fullUrl });
-      }
-    });
-
-    if (products.length === 0) {
+    if (!products.length) {
       return res.status(404).json({ success: false, error: "Ürün bulunamadı." });
     }
 
