@@ -464,8 +464,32 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
   }
 });
 
-/* ---------- Serve static built files in production (local only) ---------- */
+/* ---------- Image upload ---------- */
+const UPLOADS_DIR = path.join(path.dirname(DATA_DIR), "uploads");
+
 if (!isVercel) {
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+app.post("/api/upload", async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.json({ success: false, error: "Görsel gerekli" });
+    const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+    if (!matches) return res.json({ success: false, error: "Geçersiz format" });
+    const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+    const data = Buffer.from(matches[2], "base64");
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    fs.writeFileSync(path.join(UPLOADS_DIR, filename), data);
+    res.json({ success: true, url: `/uploads/${filename}` });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+/* ---------- Serve static files ---------- */
+if (!isVercel) {
+  app.use("/uploads", express.static(UPLOADS_DIR));
   const distPath = path.join(__dirname, "..", "dist");
   if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
