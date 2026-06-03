@@ -147,6 +147,7 @@ function ProductsTab() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [scraping, setScraping] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
@@ -193,6 +194,40 @@ function ProductsTab() {
       alert("Sunucuya bağlanılamadı: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setScraping(false);
+    }
+  };
+
+  const handleAiFill = async () => {
+    if (!editing || !editing.images.length) return;
+    setAiLoading(true);
+    try {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 30000);
+      const res = await apiFetch("/api/ai-describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: editing.images[0] }),
+        signal: ac.signal,
+      });
+      clearTimeout(timer);
+      const json = await res.json();
+      if (json.success && json.data) {
+        const d = json.data;
+        setEditing({
+          ...editing,
+          name: d.name || editing.name,
+          description: d.description || editing.description,
+          category: d.category || editing.category,
+          brand: d.brand || editing.brand || "",
+        });
+        addToast?.("AI ürün bilgilerini doldurdu", "success");
+      } else {
+        addToast?.(json.error || "AI yanıt vermedi", "error");
+      }
+    } catch (err: unknown) {
+      addToast?.("AI bağlantı hatası: " + (err instanceof Error ? err.message : String(err)), "error");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -599,6 +634,20 @@ function ProductsTab() {
                 images={editing.images}
                 onChange={(imgs) => setEditing({ ...editing, images: imgs })}
               />
+              {editing.images.length > 0 && (
+                <button
+                  onClick={handleAiFill}
+                  disabled={aiLoading}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-stone-400 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 disabled:opacity-50"
+                >
+                  {aiLoading ? (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-stone-400 border-t-transparent" />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 0-4 4v1H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4Z"/><path d="M8 9h8"/><path d="M12 13v4"/></svg>
+                  )}
+                  {aiLoading ? "AI dolduruyor..." : "AI ile Doldur (Görselden)"}
+                </button>
+              )}
             </Field>
           </div>
           <div className="mt-4 flex gap-2">
