@@ -1879,6 +1879,81 @@ function SettingsTab() {
         </div>
       </div>
 
+      {/* SMS */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <h3 className="mb-4 text-sm font-semibold text-stone-700">SMS Bildirim (NetGSM)</h3>
+        <div className="space-y-4">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={draft.smsEnabled}
+              onChange={(e) => setDraft({ ...draft, smsEnabled: e.target.checked })}
+              className="h-4 w-4 accent-stone-800"
+            />
+            <span className="text-sm text-stone-700">Müşteri mesajında SMS gönder</span>
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Admin Telefonu">
+              <input
+                value={draft.adminPhone}
+                onChange={(e) => setDraft({ ...draft, adminPhone: e.target.value })}
+                placeholder="+905337831636"
+                className="inp"
+              />
+            </Field>
+            <Field label="SMS Başlığı (NetGSM'de kayıtlı)">
+              <input
+                value={draft.smsHeader}
+                onChange={(e) => setDraft({ ...draft, smsHeader: e.target.value })}
+                placeholder="MSGrdrps"
+                className="inp"
+              />
+            </Field>
+            <Field label="NetGSM Kullanıcı Kodu">
+              <input
+                value={draft.smsUserCode}
+                onChange={(e) => setDraft({ ...draft, smsUserCode: e.target.value })}
+                placeholder="Kullanıcı kodu"
+                className="inp"
+              />
+            </Field>
+            <Field label="NetGSM Şifre">
+              <input
+                type="password"
+                value={draft.smsPassword}
+                onChange={(e) => setDraft({ ...draft, smsPassword: e.target.value })}
+                placeholder="Şifre"
+                className="inp"
+              />
+            </Field>
+          </div>
+          <button
+            onClick={async () => {
+              const res = await fetch("/api/send-sms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phone: draft.adminPhone,
+                  message: "MSgrdrps - Test SMS",
+                  usercode: draft.smsUserCode,
+                  password: draft.smsPassword,
+                  header: draft.smsHeader || "MSGrdrps",
+                }),
+              });
+              const json = await res.json();
+              alert(json.success ? "SMS gönderildi ✓" : "Hata: " + json.error);
+            }}
+            disabled={!draft.smsUserCode || !draft.smsPassword}
+            className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Test SMS Gönder
+          </button>
+          <p className="text-xs text-stone-400">
+            NetGSM'e üye olup API kullanıcı kodu almanız gerekir. SMS başlığını NetGSM panelinden onaylatın.
+          </p>
+        </div>
+      </div>
+
       <div className="flex gap-2">
         <button
           onClick={() => {

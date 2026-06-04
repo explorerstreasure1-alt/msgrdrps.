@@ -85,6 +85,11 @@ export interface Settings {
   syncIntervalMs: number;
   lastSyncTimestamp: number;
   shops: { name: string; url: string }[];
+  adminPhone: string;
+  smsEnabled: boolean;
+  smsUserCode: string;
+  smsPassword: string;
+  smsHeader: string;
 }
 
 /* ------------------------- Defaults --------------------------- */
@@ -101,6 +106,11 @@ const DEFAULT_SETTINGS: Settings = {
     "Hoş geldin 🤎\n\n• Ürünleriniz yayından sonra size özel olarak Gardrops hesabımız üzerinden ilan açılacak. Size özel ilan açabilmemiz için isminizi ve soy isminizi bizimle paylaşmayı ve aldığınız ürünlerin görsellerini bizimle paylaşmayı unutmayın!\n\n• Açılan ilan üzerinden satın alma işlemi yapabilirsiniz.\n\n• Gardrops: " +
     GARDROPS_DEFAULT +
     "\n\n• İade kabul etmiyoruz ✕",
+  adminPhone: "+905337831636",
+  smsEnabled: false,
+  smsUserCode: "",
+  smsPassword: "",
+  smsHeader: "MSGrdrps",
 };
 
 const DEFAULT_PRODUCTS: Product[] = [
@@ -510,6 +520,7 @@ interface StoreCtx {
   // push notifications
   subscribePush: (userId: string) => Promise<void>;
   notifyUser: (userId: string, title: string, body: string, url?: string) => Promise<void>;
+  sendSms: (message: string) => Promise<void>;
   // gardrops reviews
   fetchGardropsReviews: (url: string) => Promise<void>;
   // toasts
@@ -749,6 +760,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (sender === "customer") {
       const preview = text.slice(0, 80) || "Yeni bir mesaj var";
       setTimeout(() => notifyUserRef.current("admin", "MSgrdrps - Yeni Mesaj", preview, "/admin"), 100);
+      setTimeout(() => sendSms(`${name || "Müşteri"}: ${preview}`), 200);
     }
   };
 
@@ -920,6 +932,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
   notifyUserRef.current = notifyUser;
+
+  const sendSms = async (message: string) => {
+    if (!settings.adminPhone || !settings.smsEnabled) return;
+    try {
+      await apiFetch("/api/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: settings.adminPhone,
+          message,
+          usercode: settings.smsUserCode,
+          password: settings.smsPassword,
+          header: settings.smsHeader || "MSGrdrps",
+        }),
+      });
+    } catch {}
+  };
 
   const fetchGardropsReviews = async (url: string) => {
     try {
@@ -1211,6 +1240,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         getAuctionBids,
         subscribePush,
         notifyUser,
+        sendSms,
         fetchGardropsReviews,
         toasts,
         addToast,

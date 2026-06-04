@@ -493,6 +493,38 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
   }
 });
 
+/* ---------- SMS (NetGSM) ---------- */
+app.post("/api/send-sms", async (req, res) => {
+  const { phone, message, usercode, password, header } = req.body;
+  if (!phone || !message) return res.json({ success: false, error: "Eksik bilgi." });
+  if (!usercode || !password) {
+    return res.json({ success: false, error: "SMS ayarları eksik (kullanıcı kodu/şifre)." });
+  }
+  try {
+    const params = new URLSearchParams({
+      usercode,
+      password,
+      gsmno: phone.replace(/[^0-9]/g, ""),
+      message: message.slice(0, 160),
+      msgheader: header || "MSGrdrps",
+      dil: "TR",
+    });
+    const smsRes = await fetch(`https://api.netgsm.com.tr/sms/send/get?${params.toString()}`, {
+      signal: AbortSignal.timeout(15000),
+    });
+    const text = await smsRes.text();
+    const code = parseInt(text.trim(), 10);
+    if (code > 0) {
+      res.json({ success: true, ref: code });
+    } else {
+      const errors = { 20: "Geçersiz kullanıcı/şifre", 30: "Geçersiz numara", 40: "Geçersiz başlık", 70: "Hatalı sorgu", 80: "Rapor bekliyor", 85: "Bakiye yetersiz" };
+      res.json({ success: false, error: errors[code] || `NetGSM hata kodu: ${code}` });
+    }
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 /* ---------- Health check (always responds, prevents Railway SIGTERM) ---------- */
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
