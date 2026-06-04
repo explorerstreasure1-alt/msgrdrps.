@@ -26,6 +26,11 @@ function MessageText({ text }: { text: string }) {
   );
 }
 
+function fmtTime(ts: number) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function ChatWidget() {
   const { customerId, conversations, sendMessage, ensureConversation } =
     useStore();
@@ -120,29 +125,38 @@ export default function ChatWidget() {
           ) : (
             <>
               <div className="flex-1 space-y-3 overflow-y-auto p-3">
-                {convo?.messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={
-                      m.sender === "customer"
-                        ? "flex justify-end"
-                        : "flex justify-start"
-                    }
-                  >
+                {convo?.messages.map((m, i) => {
+                  const isLast = i === (convo.messages.length - 1);
+                  return (
+                  <div key={m.id} className="space-y-0.5">
                     <div
                       className={
-                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm " +
-                        (m.sender === "customer"
-                          ? "rounded-br-sm bg-stone-800 text-stone-50"
-                          : m.sender === "system"
-                          ? "rounded-bl-sm border border-amber-200 bg-amber-50 text-stone-700"
-                          : "rounded-bl-sm bg-white text-stone-800 shadow-sm")
+                        m.sender === "customer"
+                          ? "flex justify-end"
+                          : "flex justify-start"
                       }
                     >
-                      <MessageText text={m.text} />
+                      <div
+                        className={
+                          "max-w-[85%] rounded-2xl px-3 py-2 text-sm " +
+                          (m.sender === "customer"
+                            ? "rounded-br-sm bg-stone-800 text-stone-50"
+                            : m.sender === "system"
+                            ? "rounded-bl-sm border border-amber-200 bg-amber-50 text-stone-700"
+                            : "rounded-bl-sm bg-white text-stone-800 shadow-sm")
+                        }
+                      >
+                        <MessageText text={m.text} />
+                      </div>
+                    </div>
+                    <div className={"flex text-[10px] text-stone-400 " + (m.sender === "customer" ? "justify-end" : "justify-start")}>
+                      <span>{fmtTime(m.time)}</span>
+                      {m.sender === "customer" && isLast && convo.seenByAdmin && (
+                        <span className="ml-1 text-emerald-600">Görüldü</span>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );})}
                 <div ref={endRef} />
               </div>
               <div className="flex items-center gap-2 border-t border-stone-200 p-2">

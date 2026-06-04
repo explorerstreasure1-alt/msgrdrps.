@@ -1333,12 +1333,17 @@ function DiscountsTab() {
   );
 }
 
+function fmtTime(ts: number) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+}
+
 /* -------- Messages -------- */
 function MessageBubble({ msg }: { msg: Message }) {
   const isAdmin = msg.sender === "admin";
   const isSystem = msg.sender === "system";
   return (
-    <div className={"flex " + (isAdmin ? "justify-end" : "justify-start")}>
+    <div className={"space-y-0.5 " + (isAdmin ? "flex flex-col items-end" : "flex flex-col items-start")}>
       <div
         className={
           "max-w-[85%] space-y-1 rounded-2xl px-3 py-2 text-sm " +
@@ -1382,6 +1387,7 @@ function MessageBubble({ msg }: { msg: Message }) {
           <span className="whitespace-pre-wrap break-words">{msg.text}</span>
         )}
       </div>
+      <span className="text-[10px] text-stone-400 px-1">{fmtTime(msg.time)}</span>
     </div>
   );
 }
@@ -2348,8 +2354,35 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     () => sessionStorage.getItem("msgrdrps_admin") === "1"
   );
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("products");
-  const { conversations, settings, ensureConversation, sendMessage, addProduct, addToast, updateSettings } = useStore();
+  const { conversations, settings, ensureConversation, sendMessage, addProduct, addToast, updateSettings, subscribePush } = useStore();
   const unread = conversations.reduce((s, c) => s + c.unreadByAdmin, 0);
+  const prevUnread = useRef(unread);
+
+  useEffect(() => {
+    if (authed) subscribePush("admin");
+  }, [authed, subscribePush]);
+
+  useEffect(() => {
+    if (unread > prevUnread.current) {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 800;
+        gain.gain.value = 0.1;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.12);
+      } catch {}
+    }
+    prevUnread.current = unread;
+  }, [unread]);
+
+  useEffect(() => {
+    document.title = unread > 0 ? `(${unread}) MS Admin` : "MS Admin";
+  }, [unread]);
 
   // Auto-sync timer
   useEffect(() => {

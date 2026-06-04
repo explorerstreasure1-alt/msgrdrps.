@@ -562,6 +562,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [userGifts, setUserGifts] = useState<UserGiftClaim[]>(() => load(K.userGifts, []));
   const [giftProductId, setGiftProductId] = useState<string>(() => load("giftProductId", ""));
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const notifyUserRef = useRef<StoreCtx["notifyUser"]>(() => Promise.resolve());
   const [dataLoaded, setDataLoaded] = useState(false);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -729,7 +730,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ];
       }
       if (exists.blocked && sender === "customer") {
-        // still keep customer messages but mark admin block message
         return prev;
       }
       return prev.map((c) =>
@@ -746,6 +746,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           : c
       );
     });
+    if (sender === "customer") {
+      const preview = text.slice(0, 80) || "Yeni bir mesaj var";
+      setTimeout(() => notifyUserRef.current("admin", "MSgrdrps - Yeni Mesaj", preview, "/admin"), 100);
+    }
   };
 
   const markRead = (convoId: string) =>
@@ -915,6 +919,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
     } catch {}
   };
+  notifyUserRef.current = notifyUser;
 
   const fetchGardropsReviews = async (url: string) => {
     try {
