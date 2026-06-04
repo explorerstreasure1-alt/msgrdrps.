@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useStore, type Product } from "../lib/store";
 import { Stars } from "./Stars";
 
@@ -12,17 +12,13 @@ function ConditionBadge({ condition }: { condition: "new" | "second" }) {
 export default function ProductDetailPanel({
   product,
   onClose,
-  onCartOpen,
 }: {
   product: Product;
   onClose: () => void;
-  onCartOpen?: () => void;
 }) {
-  const { products, reviews, addToCart, toggleFavorite, favorites } = useStore();
+  const { products, reviews, toggleFavorite, favorites } = useStore();
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState<"details" | "reviews">("details");
-  const [selectedGift, setSelectedGift] = useState<string | undefined>(undefined);
-  const [quantity, setQuantity] = useState(1);
   const imgRef = useRef<HTMLDivElement>(null);
   const [lensPos, setLensPos] = useState({ x: 50, y: 50 });
   const [showLens, setShowLens] = useState(false);
@@ -39,7 +35,6 @@ export default function ProductDetailPanel({
   };
 
   const isFavorite = favorites.includes(product.id);
-  const availableGifts = product.gifts.filter((g) => g.stock > 0);
 
   const productReviews = reviews.filter(
     (r) => r.text.toLowerCase().includes(product.name.toLowerCase())
@@ -49,12 +44,6 @@ export default function ProductDetailPanel({
     () => products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 6),
     [products, product.category, product.id]
   );
-
-  const handleAddToCart = () => {
-    if (product.status === "out" || product.stock === 0) return;
-    addToCart({ productId: product.id, quantity, giftId: selectedGift });
-    onClose();
-  };
 
   return (
     <>
@@ -177,23 +166,6 @@ export default function ProductDetailPanel({
 
             <p className="mt-3 text-sm leading-relaxed text-stone-600">{product.description}</p>
 
-            {availableGifts.length > 0 && (
-              <div className="mt-3">
-                <h4 className="text-sm font-semibold text-stone-800">🎁 Hediye Seç</h4>
-                <div className="mt-2 space-y-1.5">
-                  {availableGifts.map((g) => (
-                    <label key={g.id} className={`flex items-center justify-between rounded-xl border-2 p-2.5 transition cursor-pointer ${selectedGift === g.id ? "border-emerald-500 bg-emerald-50" : "border-stone-200 bg-white hover:border-stone-400"}`}>
-                      <div className="flex items-center gap-2">
-                        <input type="radio" name="gift" className="h-4 w-4 accent-emerald-600" checked={selectedGift === g.id} onChange={() => setSelectedGift(g.id)} />
-                        <span className="text-sm font-medium text-stone-800">{g.title}</span>
-                      </div>
-                      <span className="text-xs text-stone-400">Stok: {g.stock}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="mt-3 border-b border-stone-200">
               <div className="flex gap-5">
                 <button onClick={() => setActiveTab("details")} className={"pb-2 text-sm font-medium transition " + (activeTab === "details" ? "border-b-2 border-stone-800 text-stone-800" : "text-stone-500")}>Detaylar</button>
@@ -274,45 +246,21 @@ export default function ProductDetailPanel({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </a>
           </div>
-          <div className="flex-shrink-0 border-t border-stone-200 bg-white px-5 py-2.5">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium text-stone-700">Miktar</span>
-              <div className="flex items-center gap-1.5">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-stone-300 text-stone-700 hover:bg-stone-100 text-sm">−</button>
-                <span className="w-7 text-center text-sm font-semibold">{quantity}</span>
-                <button onClick={() => setQuantity(Math.min(product.stock || 1, quantity + 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-stone-300 text-stone-700 hover:bg-stone-100 text-sm">+</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              {product.gardropsUrl && (
-                <a
-                  href="https://www.gardrops.com/payment"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-full border-2 border-emerald-600 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  Gardrops'ta Satın Al
-                </a>
-              )}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.status === "out" || product.stock === 0}
-                  className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-800 py-2.5 text-sm font-semibold text-white transition-all duration-500 hover:bg-[#d4a0a0] hover:shadow-[0_0_25px_6px_rgba(212,160,160,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-pink-500/0 via-pink-400/20 to-pink-500/0 transition-transform duration-500 group-hover:translate-x-full" />
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></svg>
-                  <span className="relative z-10">Sepete Ekle</span>
-                </button>
-                <button
-                  onClick={() => { onClose(); onCartOpen?.(); }}
-                  className="flex items-center justify-center rounded-full border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
-                >
-                  Sepete Git
-                </button>
-              </div>
-            </div>
+          <div className="flex-shrink-0 border-t border-stone-200 bg-white px-5 py-3">
+            {product.gardropsUrl ? (
+              <a
+                href={product.gardropsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 rounded-full bg-stone-800 py-3 text-sm font-semibold text-white transition-all hover:bg-[#d4a0a0] hover:shadow-[0_0_25px_6px_rgba(212,160,160,0.5)]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Gardrops'ta Satın Al
+              </a>
+            ) : (
+              <p className="text-center text-sm text-stone-400">Bu ürün şu an satışta değil</p>
+            )}
           </div>
         </div>
       </div>

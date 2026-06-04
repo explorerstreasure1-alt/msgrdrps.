@@ -7,7 +7,6 @@ import {
   type DiscountCode,
   type Message,
   type Auction,
-  type Order,
 } from "../lib/store";
 import { apiFetch } from "../lib/api";
 import { Stars } from "./Stars";
@@ -2332,169 +2331,9 @@ function Field({
   );
 }
 
-/* -------- Siparişler -------- */
-function OrdersTab() {
-  const { orders, updateOrderStatus, updateOrder, products } = useStore();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const statusFlow: Order["status"][] = ["pending", "paid", "shipped", "delivered"];
-  const statusLabels: Record<Order["status"], string> = {
-    pending: "Bekliyor", paid: "Ödendi", shipped: "Kargoda", delivered: "Teslim Edildi"
-  };
-  const statusColors: Record<Order["status"], string> = {
-    pending: "bg-amber-500", paid: "bg-blue-500", shipped: "bg-emerald-500", delivered: "bg-stone-500"
-  };
-
-  const nextStatus = (current: Order["status"]): Order["status"] | null => {
-    const idx = statusFlow.indexOf(current);
-    return idx < statusFlow.length - 1 ? statusFlow[idx + 1] : null;
-  };
-
-  return (
-    <div>
-      <h2 className="font-elegant text-xl text-stone-800 mb-4">Siparişler ({orders.length})</h2>
-      {orders.length === 0 ? (
-        <p className="text-sm text-stone-400">Henüz sipariş yok.</p>
-      ) : (
-        <div className="space-y-3">
-          {[...orders].sort((a, b) => b.date - a.date).map((o) => (
-            <div key={o.id} className="rounded-xl border border-stone-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-stone-400">#{o.id}</p>
-                  <p className="text-xs text-stone-500">{new Date(o.date).toLocaleString("tr-TR")}</p>
-                </div>
-                <span className={"rounded-full px-3 py-1 text-[11px] font-semibold text-white " + statusColors[o.status]}>
-                  {statusLabels[o.status]}
-                </span>
-              </div>
-              <div className="mt-2 text-sm text-stone-700">
-                {o.items.length} ürün · ₺{o.total.toLocaleString("tr-TR")}
-                {o.shippingAddress && (
-                  <span className="ml-2 text-xs text-stone-400">→ {o.shippingAddress.city}</span>
-                )}
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                {nextStatus(o.status) && (
-                  <button
-                    onClick={() => updateOrderStatus(o.id, nextStatus(o.status)!)}
-                    className="rounded-full bg-stone-800 px-3 py-1 text-[11px] font-medium text-white hover:bg-stone-700"
-                  >
-                    → {statusLabels[nextStatus(o.status)!]}
-                  </button>
-                )}
-                <button
-                  onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
-                  className="text-[11px] text-stone-500 underline underline-offset-2 hover:text-stone-700"
-                >
-                  {expandedId === o.id ? "Gizle" : "Detay"}
-                </button>
-              </div>
-              {expandedId === o.id && (
-                <div className="mt-3 space-y-2 border-t border-stone-100 pt-3 text-xs text-stone-600">
-                  <div>
-                    <p className="font-medium text-stone-700 mb-1">Ürünler:</p>
-                    {o.items.map((item, i) => {
-                      const p = products.find((x) => x.id === item.productId);
-                      const gardropsUrl = item.gardropsUrl || p?.gardropsUrl || "";
-                      return (
-                        <div key={i} className="flex items-center gap-2 py-1">
-                          {p?.images[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover bg-stone-100" />}
-                          <span className="flex-1">{item.name} × {item.quantity}</span>
-                          <span className="font-medium">₺{item.price * item.quantity}</span>
-                          {gardropsUrl && (
-                            <a
-                              href={gardropsUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded border border-stone-300 px-2 py-0.5 text-[10px] text-stone-500 hover:bg-stone-100 hover:text-stone-800"
-                              title="Gardrops'ta aç"
-                            >
-                              G
-                            </a>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div>
-                    <p className="font-medium text-stone-700 mb-1">Teslimat:</p>
-                    <p>{o.shippingAddress.name} · {o.shippingAddress.phone}</p>
-                    <p>{o.shippingAddress.address}, {o.shippingAddress.district}/{o.shippingAddress.city}</p>
-                  </div>
-                  {o.couponUsed && <p>Kupon: {o.couponUsed}</p>}
-                  {o.pointsUsed && <p>Puan harcandı: {o.pointsUsed}</p>}
-                  {o.fastShippingUsed && <p>🚀 Hızlı gönderim</p>}
-                  {o.giftClaimed && <p>🎁 Hediye: {o.giftClaimed}</p>}
-                  {/* Gardrops section */}
-                  {o.status === "paid" && (
-                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-700"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                          <span className="font-medium text-amber-800">Gardrops İşlemi</span>
-                        </div>
-                        {o.gardropsConfirmed ? (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">✓ Onaylandı</span>
-                        ) : (
-                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Bekliyor</span>
-                        )}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {o.items.map((item, i) => {
-                          const gardropsUrl = item.gardropsUrl || "";
-                          if (!gardropsUrl) return null;
-                          return (
-                            <a
-                              key={i}
-                              href={gardropsUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => { e.stopPropagation(); }}
-                              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[11px] text-amber-800 hover:bg-amber-100"
-                            >
-                              {item.name} → Gardrops'ta Aç
-                            </a>
-                          );
-                        })}
-                        {!o.gardropsConfirmed && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); updateOrder(o.id, { gardropsConfirmed: true, gardropsConfirmedAt: Date.now() }); }}
-                            className="rounded-lg bg-stone-800 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-stone-700"
-                          >
-                            Gardrops Onayla
-                          </button>
-                        )}
-                        {o.gardropsConfirmed && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); updateOrder(o.id, { gardropsConfirmed: false, gardropsConfirmedAt: undefined }); }}
-                            className="rounded-lg border border-red-200 px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50"
-                          >
-                            Geri Al
-                          </button>
-                        )}
-                      </div>
-                      {o.gardropsConfirmedAt && (
-                        <p className="mt-1.5 text-[10px] text-stone-400">
-                          Onay: {new Date(o.gardropsConfirmedAt).toLocaleString("tr-TR")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ---------------- Shell ---------------- */
 const TABS = [
   { id: "products", label: "Ürünler" },
-  { id: "orders", label: "Siparişler" },
   { id: "auctions", label: "Açık Artırma" },
   { id: "wheel", label: "Çark & Ödüller" },
   { id: "statistics", label: "İstatistikler" },
@@ -2627,7 +2466,6 @@ export default function Admin({ onExit }: { onExit: () => void }) {
 
       <div className="mx-auto max-w-7xl px-5 py-2">
         {tab === "products" && <ProductsTab />}
-        {tab === "orders" && <OrdersTab />}
         {tab === "auctions" && <AuctionsTab onContact={(userId, userName) => { ensureConversation(userId, userName); sendMessage(userId, "admin", "Açık artırma teklifiniz kabul edildi. İletişime geçmek için yazın."); setTab("messages"); }} />}
         {tab === "wheel" && <WheelTab />}
         {tab === "statistics" && <StatsTab />}

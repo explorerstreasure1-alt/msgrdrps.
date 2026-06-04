@@ -2,14 +2,12 @@ import { useState } from "react";
 import { useStore } from "../lib/store";
 
 export default function AccountPanel({ onClose }: { onClose: () => void }) {
-  const { register, login, logout, currentUser, orders, cart, subscribePush } = useStore();
+  const { register, login, logout, currentUser, subscribePush } = useStore();
   const [mode, setMode] = useState<"login" | "register">(currentUser ? "login" : "register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  const userOrders = orders.filter((o) => currentUser?.orderIds.includes(o.id));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,35 +79,6 @@ export default function AccountPanel({ onClose }: { onClose: () => void }) {
               <h2 className="font-elegant text-2xl text-stone-800">Hesabım</h2>
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-200">{currentUser.name}</span>
             </div>
-
-            {cart.length > 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-medium text-amber-800">Sepetinde {cart.length} ürün var</p>
-                <p className="mt-1 text-[10px] text-amber-600">Siparişini sepetten tamamlayabilirsin (adres bilgisi gerekli)</p>
-              </div>
-            )}
-
-            <div>
-              <p className="text-sm font-semibold text-stone-700">Sipariş Geçmişi</p>
-              {userOrders.length === 0 ? (
-                <p className="mt-2 text-xs text-stone-400">Henüz siparişin yok.</p>
-              ) : (
-                <div className="mt-2 space-y-2">
-                  {userOrders.map((o) => (
-                    <div key={o.id} className="rounded-xl border border-[#F1EDE9] bg-white p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-700">{new Date(o.date).toLocaleDateString("tr-TR")}</span>
-                        <span className={"rounded px-2 py-0.5 text-[10px] font-semibold " + (o.status === "pending" ? "bg-amber-100 text-amber-700" : o.status === "paid" ? "bg-blue-100 text-blue-700" : o.status === "shipped" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-600")}>
-                          {o.status === "pending" ? "Bekliyor" : o.status === "paid" ? "Ödendi" : o.status === "shipped" ? "Kargoda" : "Teslim Edildi"}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-stone-500">{o.items.length} ürün · ₺{o.total}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <button onClick={() => logout()}
               className="w-full rounded-xl border border-stone-200 py-2.5 text-xs font-medium text-stone-500 hover:border-red-200 hover:text-red-600 transition-colors">
               Çıkış Yap

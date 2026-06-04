@@ -4,7 +4,6 @@ import { Stars } from "./Stars";
 import ChatWidget from "./ChatWidget";
 import ProductCard from "./ProductCard";
 import ProductDetailPanel from "./ProductDetailPanel";
-import CartPanel from "./CartPanel";
 import AccountPanel from "./AccountPanel";
 import ComparePanel from "./ComparePanel";
 import SpinWheel from "./SpinWheel";
@@ -31,26 +30,7 @@ function TopBar() {
   );
 }
 
-function CartButton({ onClick, count }: { onClick: () => void; count: number }) {
-  return (
-    <button
-      onClick={onClick}
-      className="relative flex items-center gap-2 rounded-full border border-stone-300 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50"
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="8" cy="21" r="1" />
-        <circle cx="19" cy="21" r="1" />
-        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-      </svg>
-      <span className="hidden sm:inline">Sepet</span>
-      {count > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
+
 
 function Logo({ className }: { className?: string }) {
   return (
@@ -368,10 +348,9 @@ function InfoStrip() {
 }
 
 export default function Home({ onAdmin }: { onAdmin: () => void }) {
-  const { products, cart, favorites, currentUser, settings, compareIds, addToCart, toasts, dismissToast, auctions } = useStore();
+  const { products, favorites, currentUser, settings, compareIds, toasts, dismissToast, auctions } = useStore();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [spinOpen, setSpinOpen] = useState(false);
@@ -460,8 +439,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     return list;
   }, [products, activeCategory, conditionFilter, search, sort, priceMin, priceMax, shopFilter, brandFilter]);
 
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-
   const handleOpenProduct = (product: Product) => {
     setSelectedProduct(product);
     document.body.style.overflow = "hidden";
@@ -469,10 +446,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
   const handleCloseProduct = () => {
     setSelectedProduct(null);
     document.body.style.overflow = "";
-  };
-  const handleOpenCart = () => {
-    setCartOpen(true);
-    document.body.style.overflow = "hidden";
   };
   const handleOpenAuction = (a: Auction) => {
     setSelectedAuction(a);
@@ -482,11 +455,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
     setSelectedAuction(null);
     document.body.style.overflow = "";
   };
-  const handleCloseCart = () => {
-    setCartOpen(false);
-    document.body.style.overflow = "";
-  };
-
   return (
     <div className="min-h-screen bg-[#f7f1e7] text-stone-800 overflow-x-hidden">
       <TopBar />
@@ -514,7 +482,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span>{currentUser ? currentUser.name.split(" ")[0] : "Giriş Yap"}</span>
             </button>
-            <CartButton onClick={handleOpenCart} count={cartCount} />
             <button onClick={() => setCompareOpen(true)} className="relative flex items-center gap-1.5 rounded-full border border-stone-300 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
               {compareIds.length > 0 && (<span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 text-[9px] text-white">{compareIds.length}</span>)}
@@ -536,14 +503,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
               <button onClick={() => setAccountOpen(true)} className="p-1.5 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Hesap">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </button>
-              <button onClick={handleOpenCart} className="relative p-1.5 text-stone-600 hover:text-stone-900 transition-colors" aria-label="Sepet">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
-                </svg>
-                {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-semibold text-white">{cartCount}</span>
-                )}
-              </button>
+
             </div>
           </div>
 
@@ -887,14 +847,6 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                     <p className="mt-1.5 truncate text-xs font-medium text-stone-700">{p.name}</p>
                     <div className="mt-1 flex items-center justify-between">
                       <p className="text-xs font-bold text-stone-900">{p.priceNum.toLocaleString("tr-TR")} ₺</p>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); addToCart({ productId: p.id, quantity: 1 }); }}
-                        disabled={p.status === "out" || p.stock === 0}
-                        className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-800 text-white hover:bg-stone-700 disabled:opacity-40"
-                        title="Sepete Ekle"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -923,12 +875,11 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
 
       {/* Panels */}
       {selectedProduct && (
-        <ProductDetailPanel product={selectedProduct} onClose={handleCloseProduct} onCartOpen={handleOpenCart} />
+        <ProductDetailPanel product={selectedProduct} onClose={handleCloseProduct} />
       )}
       {selectedAuction && (
         <AuctionDetailPanel auction={selectedAuction} onClose={handleCloseAuction} />
       )}
-      {cartOpen && <CartPanel onClose={handleCloseCart} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
       {compareOpen && <ComparePanel onClose={() => setCompareOpen(false)} />}
       {spinOpen && <SpinWheel onClose={() => setSpinOpen(false)} />}
