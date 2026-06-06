@@ -3,32 +3,6 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "framework": "vite",
-  "headers": [
-    {
-      "source": "/assets/(.*\\.js)",
-      "headers": [
-        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" }
-      ]
-    },
-    {
-      "source": "/assets/(.*\\.css)",
-      "headers": [
-        { "key": "Content-Type", "value": "text/css; charset=utf-8" }
-      ]
-    },
-    {
-      "source": "/assets/(.*\\.png)",
-      "headers": [
-        { "key": "Content-Type", "value": "image/png" }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
-      ]
-    }
-  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30

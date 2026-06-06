@@ -14,7 +14,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
-  base: "./",
+  base: "/",
   server: {
     proxy: {
       "/api": {
@@ -25,5 +25,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
+    target: "es2020",
+    minify: "esbuild",
   },
 });
