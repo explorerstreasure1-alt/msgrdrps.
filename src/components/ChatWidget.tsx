@@ -50,8 +50,7 @@ export default function ChatWidget() {
     if (open && nameSet) {
       ensureConversation(customerId, name || "Müşteri");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, nameSet]);
+  }, [open, nameSet, customerId, name, ensureConversation]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });

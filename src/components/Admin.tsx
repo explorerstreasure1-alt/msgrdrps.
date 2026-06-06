@@ -9,11 +9,12 @@ import {
   type Auction,
 } from "../lib/store";
 import { apiFetch } from "../lib/api";
+import { fileToDataUrl } from "../utils/cn";
 import { Stars } from "./Stars";
 import ImageDropzone from "./ImageDropzone";
 import { AuctionDetailPanel } from "./AuctionDetailPanel";
 
-const ADMIN_PASSWORD = "tanem123+";
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "tanem123+";
 
 /* Shared helper to read Gardrops store import (SSE local / JSON Vercel) */
 async function readGardropsStore(url: string, onProduct: (p: any) => void, onDone?: () => void, onError?: (e: string) => void, signal?: AbortSignal) {
@@ -65,14 +66,6 @@ async function readGardropsStore(url: string, onProduct: (p: any) => void, onDon
 }
 
 /* -------- helpers for files/images -------- */
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 /* ---------------------- Login ---------------------- */
 function Login({ onOk, onBack }: { onOk: () => void; onBack?: () => void }) {
@@ -223,10 +216,10 @@ function ProductsTab() {
           images: d.images?.length ? d.images : editing.images,
         });
       } else {
-        alert(json.error || "Ürün bilgileri alınamadı.");
+        addToast(json.error || "Ürün bilgileri alınamadı.", "error");
       }
     } catch (err: unknown) {
-      alert("Sunucuya bağlanılamadı: " + (err instanceof Error ? err.message : String(err)));
+      addToast("Sunucuya bağlanılamadı: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setScraping(false);
     }
@@ -737,8 +730,9 @@ function ProductsTab() {
                   onError={(e) => {
                     const t = e.currentTarget;
                     t.style.display = "none";
-                    t.parentElement!.classList.add("flex", "items-center", "justify-center");
-                    t.parentElement!.innerHTML = '<svg class="w-6 h-6 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+                    if (t.parentElement) {
+                      t.parentElement.classList.add("flex", "items-center", "justify-center");
+                    }
                   }}
                 />
               ) : (
@@ -1760,10 +1754,10 @@ function SettingsTab() {
           updateSettings(updated);
           if (imported > 0) addToast(`${imported} ürün senkronize edildi`, "success");
         },
-        (e) => alert(e)
+        (e) => addToast(e, "error")
       );
     } catch (err: unknown) {
-      alert("Sync hatası: " + (err instanceof Error ? err.message : String(err)));
+      addToast("Sync hatası: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setSyncing(false);
     }
@@ -1941,7 +1935,8 @@ function SettingsTab() {
                 }),
               });
               const json = await res.json();
-              alert(json.success ? "SMS gönderildi ✓" : "Hata: " + json.error);
+              if (json.success) addToast("SMS gönderildi", "success");
+              else addToast("Hata: " + json.error, "error");
             }}
             disabled={!draft.smsUserCode || !draft.smsPassword}
             className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"

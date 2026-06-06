@@ -12,6 +12,8 @@ export function PwaUpdatePrompt() {
     };
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
+    let stateChangeHandler: (() => void) | undefined;
+
     navigator.serviceWorker.ready.then((reg) => {
       if (reg.waiting) {
         setWaiting(reg.waiting);
@@ -20,9 +22,10 @@ export function PwaUpdatePrompt() {
       reg.addEventListener("updatefound", () => {
         const installing = reg.installing;
         if (installing) {
-          installing.addEventListener("statechange", () => {
+          stateChangeHandler = () => {
             if (reg.waiting) setWaiting(reg.waiting);
-          });
+          };
+          installing.addEventListener("statechange", stateChangeHandler);
         }
       });
     });

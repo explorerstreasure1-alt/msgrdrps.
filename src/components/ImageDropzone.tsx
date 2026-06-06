@@ -1,13 +1,5 @@
 import { useRef, useState } from "react";
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import { fileToDataUrl } from "../utils/cn";
 
 export default function ImageDropzone({
   images,

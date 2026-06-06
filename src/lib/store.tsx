@@ -911,7 +911,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY || "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
       });
       await apiFetch("/api/push/subscribe", {
         method: "POST",

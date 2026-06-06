@@ -12,8 +12,8 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 
 webpush.setVapidDetails(
   "mailto:admin@msgrdrps.com",
-  "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
-  "ybJ8e6vUfj47VpZxr5eKbY04eZWuuyPrmpevz3pfQHE",
+  process.env.VAPID_PUBLIC_KEY || "BPdJDzUrtfItf1MCf4yb9ykYUs1xRfclwUbs3NdWh6-6RfMYrdIH3-oFmK2keE1eBT0NxN71gHrUJr9ibSXjQD4",
+  process.env.VAPID_PRIVATE_KEY || "ybJ8e6vUfj47VpZxr5eKbY04eZWuuyPrmpevz3pfQHE",
 );
 
 const app = express();
@@ -128,15 +128,15 @@ const BROWSER_HEADERS = {
 };
 
 /* ---------- API: Gardrops scraping (single product) ---------- */
-app.post("/api/scrape-gardrops", async (req, res) => {
+async function handleScrapeGardrops(req, res) {
   try {
-    const { url } = req.body;
-    if (!url || !url.includes("gardrops.com/")) {
+    const targetUrl = req.body.url || req.body.targetUrl;
+    if (!targetUrl || !targetUrl.includes("gardrops.com/")) {
       return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
     }
     let response;
     try {
-      response = await fetchWithFallback(url);
+      response = await fetchWithFallback(targetUrl);
     } catch {
       return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
     }
@@ -175,7 +175,7 @@ app.post("/api/scrape-gardrops", async (req, res) => {
         category: category || detectCategory(name),
         condition: isSecondHand ? "second" : "new",
         images: images.length ? images : [],
-        gardropsUrl: url,
+        gardropsUrl: targetUrl,
         brand: detectBrand(name),
       };
 
@@ -184,14 +184,14 @@ app.post("/api/scrape-gardrops", async (req, res) => {
       res.json({
         success: true,
         data: {
-          name: new URL(url).pathname.split("/").filter(Boolean).pop() || "Gardrops Ürünü",
+          name: new URL(targetUrl).pathname.split("/").filter(Boolean).pop() || "Gardrops Ürünü",
           price: "",
           priceNum: 0,
           description: "",
           category: "Diğer",
           condition: "new",
           images: [],
-          gardropsUrl: url,
+          gardropsUrl: targetUrl,
           brand: "",
         },
       });
@@ -199,7 +199,9 @@ app.post("/api/scrape-gardrops", async (req, res) => {
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
-});
+}
+app.post("/api/scrape-gardrops", handleScrapeGardrops);
+app.post("/api/fetch", handleScrapeGardrops);
 
 /* ---------- API: Gardrops store import (SSE) ---------- */
 /* ---------- Category detection from product name ---------- */
@@ -252,9 +254,9 @@ function detectCategory(name) {
   return "Diğer";
 }
 
-app.post("/api/scrape-gardrops-store", async (req, res) => {
-  const { url } = req.body;
-  if (!url || !url.includes("gardrops.com/")) {
+async function handleScrapeGardropsStore(req, res) {
+  const targetUrl = req.body.url || req.body.targetUrl;
+  if (!targetUrl || !targetUrl.includes("gardrops.com/")) {
     return res.json({ success: false, error: "Geçerli bir Gardrops mağaza URL'si girin." });
   }
 
@@ -304,7 +306,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
     try {
       let response;
       try {
-        response = await fetchWithFallback(url);
+        response = await fetchWithFallback(targetUrl);
       } catch {
         sendEvent("error", { error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
         res.end();
@@ -341,7 +343,7 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
     try {
       let response;
       try {
-        response = await fetchWithFallback(url);
+        response = await fetchWithFallback(targetUrl);
       } catch {
         return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
       }
@@ -369,7 +371,9 @@ app.post("/api/scrape-gardrops-store", async (req, res) => {
       res.json({ success: true, products: all });
     } catch (err) { res.json({ success: false, error: err.message }); }
   }
-});
+}
+app.post("/api/scrape-gardrops-store", handleScrapeGardropsStore);
+app.post("/api/fetch-store", handleScrapeGardropsStore);
 
 /* ---------- API: Order sync (optional server-side) ---------- */
 app.post("/api/orders", (req, res) => {
@@ -446,15 +450,15 @@ function generateReviews(products) {
   }));
 }
 
-app.post("/api/scrape-gardrops-reviews", async (req, res) => {
-  const { url } = req.body;
-  if (!url || !url.includes("gardrops.com/")) {
+async function handleScrapeGardropsReviews(req, res) {
+  const targetUrl = req.body.url || req.body.targetUrl;
+  if (!targetUrl || !targetUrl.includes("gardrops.com/")) {
     return res.json({ success: false, error: "Geçerli bir Gardrops URL'si girin." });
   }
   try {
     let response;
     try {
-      response = await fetchWithFallback(url);
+      response = await fetchWithFallback(targetUrl);
     } catch {
       return res.json({ success: false, error: "Gardrops'a erişilemedi — Vercel IP'si engelleniyor." });
     }
@@ -491,7 +495,9 @@ app.post("/api/scrape-gardrops-reviews", async (req, res) => {
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
-});
+}
+app.post("/api/scrape-gardrops-reviews", handleScrapeGardropsReviews);
+app.post("/api/fetch-reviews", handleScrapeGardropsReviews);
 
 /* ---------- SMS (NetGSM) ---------- */
 app.post("/api/send-sms", async (req, res) => {
@@ -520,6 +526,107 @@ app.post("/api/send-sms", async (req, res) => {
       const errors = { 20: "Geçersiz kullanıcı/şifre", 30: "Geçersiz numara", 40: "Geçersiz başlık", 70: "Hatalı sorgu", 80: "Rapor bekliyor", 85: "Bakiye yetersiz" };
       res.json({ success: false, error: errors[code] || `NetGSM hata kodu: ${code}` });
     }
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+/* ---------- API: Gardrops sync (check/mark-sold) ---------- */
+app.post("/api/gardrops-sync", async (req, res) => {
+  try {
+    const { action, gardropsUrl, productUrl } = req.body;
+    const targetUrl = gardropsUrl || productUrl;
+    if (!targetUrl || !targetUrl.includes("gardrops.com/")) {
+      return res.json({ success: false, error: "Geçerli Gardrops URL'si gerekli" });
+    }
+    if (action === "check") {
+      try {
+        const fres = await fetchWithFallback(targetUrl);
+        const text = await fres.text();
+        const sold = !text || text.length < 200 || text.includes("yayında değil") || text.includes("mevcut değil") || text.includes("404");
+        return res.json({ success: true, status: sold ? "sold" : "active" });
+      } catch {
+        return res.json({ success: true, status: "unknown" });
+      }
+    }
+    if (action === "mark-sold") {
+      return res.json({ success: true, method: "manual", note: "API ile işaretlenemedi — admin manüel yapacak", manualRequired: true });
+    }
+    return res.json({ success: false, error: "Geçersiz action (check | mark-sold)" });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+/* ---------- API: AI describe (Mistral) ---------- */
+app.post("/api/ai-describe", async (req, res) => {
+  try {
+    const { imageUrl, type = "product" } = req.body;
+    if (!imageUrl) return res.json({ success: false, error: "imageUrl gerekli" });
+    const apiKey = process.env.MISTRAL_API_KEY;
+    if (!apiKey) return res.json({ success: false, error: "MISTRAL_API_KEY environment variable eksik" });
+
+    const prompt = type === "reviews"
+      ? `Sen bir yorum okuma asistanısın. Verilen ekran görüntüsündeki TÜM yorumları oku ve **sadece JSON array** döndür, başka hiçbir metin yazma.\n\nDöndüreceğin JSON formatı:\n[\n  {\n    "author": "Yorumu yapan kullanıcı adı",\n    "rating": 5,\n    "text": "Yorum metni",\n    "date": "Yorum tarihi"\n  }\n]\n\nKurallar:\n- Görseldeki HER yorumu ayrı bir obje olarak ekle\n- rating 1-5 arası, tam sayı olmalı\n- En az 1 yorum bulamazsan boş array döndür: []`
+      : `Sen bir moda ürün asistanısın. Verilen görseldeki giyim/aksesuar ürününü analiz et ve **sadece JSON** döndür, başka hiçbir metin yazma.\n\nDöndüreceğin JSON formatı:\n{\n  "name": "Türkçe ürün adı (kısa, max 60 karakter)",\n  "description": "Türkçe ürün açıklaması (2-3 cümle)",\n  "category": "Ürün kategorisi",\n  "brand": "Marka adı (yoksa boş)"\n}`;
+
+    const content = [
+      { type: "text", text: prompt },
+      { type: "image_url", image_url: imageUrl },
+    ];
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    const aiRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "pixtral-large-latest",
+        messages: [{ role: "user", content }],
+        max_tokens: type === "reviews" ? 2000 : 1000,
+        temperature: 0.1,
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+
+    if (!aiRes.ok) {
+      return res.json({ success: false, error: `Mistral API hatası ${aiRes.status}` });
+    }
+
+    const json = await aiRes.json();
+    const text = json.choices?.[0]?.message?.content || "";
+
+    let parsed;
+    try {
+      const jsonMatch = text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+    } catch {
+      return res.json({ success: false, error: "Mistral AI JSON döndürmedi", raw: text.slice(0, 500) });
+    }
+
+    if (type === "reviews") {
+      const reviews = Array.isArray(parsed) ? parsed : (parsed.reviews || parsed.data || []);
+      return res.json({
+        success: true,
+        data: reviews.map((r) => ({
+          author: (r.author || r.username || r.user || "").trim(),
+          rating: typeof r.rating === "number" ? r.rating : parseInt(r.rating, 10) || 5,
+          text: (r.text || r.comment || "").trim(),
+          date: (r.date || "").trim(),
+        })).filter((r) => r.text),
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        name: (parsed.name || "").trim(),
+        description: (parsed.description || "").trim(),
+        category: (parsed.category || "Diğer").trim(),
+        brand: (parsed.brand || "").trim(),
+      },
+    });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }

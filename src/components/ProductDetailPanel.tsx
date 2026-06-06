@@ -1,13 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useStore, type Product } from "../lib/store";
 import { Stars } from "./Stars";
-
-function ConditionBadge({ condition }: { condition: "new" | "second" }) {
-  if (condition === "new") {
-    return <span className="rounded-full bg-emerald-600/90 px-3 py-1 text-xs font-semibold text-white">SIFIR</span>;
-  }
-  return <span className="rounded-full bg-amber-600/90 px-3 py-1 text-xs font-semibold text-white">İKİNCİ EL</span>;
-}
+import { ConditionBadge } from "./ProductCard";
 
 export default function ProductDetailPanel({
   product,

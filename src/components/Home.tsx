@@ -287,16 +287,6 @@ function ReviewSection() {
               key={r.id}
               className="flex flex-col rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg overflow-hidden"
             >
-              {r.image && (
-                <div className="h-44 w-full overflow-hidden bg-stone-100">
-                  <img
-                    src={r.image}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                </div>
-              )}
               <div className="flex flex-col p-5 pt-4 flex-1">
                 <Stars rating={r.rating} />
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-600">
@@ -842,7 +832,7 @@ export default function Home({ onAdmin }: { onAdmin: () => void }) {
                 <div key={p.id} className="w-36 flex-shrink-0">
                   <div className="cursor-pointer rounded-xl border border-stone-200 bg-white p-2 transition hover:shadow-md" onClick={() => handleOpenProduct(p)}>
                     <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-stone-100">
-                      <img src={p.images[0]} alt={p.name} className="h-full w-full object-cover" loading="lazy" />
+                      <img src={p.images[0]} alt={p.name} className="h-full w-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     </div>
                     <p className="mt-1.5 truncate text-xs font-medium text-stone-700">{p.name}</p>
                     <div className="mt-1 flex items-center justify-between">

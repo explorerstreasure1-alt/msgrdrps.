@@ -16,6 +16,8 @@ function ConditionBadge({ condition }: { condition: "new" | "second" }) {
   );
 }
 
+export { ConditionBadge };
+
 /* Gold dust falling particles for discounted products */
 function GoldShimmer() {
   const particles = Array.from({ length: 16 }, (_, __) => ({
