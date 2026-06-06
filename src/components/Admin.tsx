@@ -1037,50 +1037,63 @@ function ReviewsTab() {
         <h2 className="font-elegant text-xl text-stone-800">
           Gardrops Yorumları ({reviews.length})
         </h2>
-        <button
-          onClick={startNew}
-          className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
-        >
-          + Yorum Yaz
-        </button>
-        <button
-          onClick={async () => { setFetching(true); await fetchGardropsReviews(settings.gardropsUrl); setFetching(false); }}
-          disabled={fetching}
-          className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 transition disabled:opacity-50"
-        >
-          {fetching ? "Çekiliyor..." : "Gardrops'tan Çek"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={startNew}
+            className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          >
+            + Yorum Yaz
+          </button>
+          <button
+            onClick={async () => { setFetching(true); await fetchGardropsReviews(settings.gardropsUrl); setFetching(false); }}
+            disabled={fetching}
+            className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 transition disabled:opacity-50"
+          >
+            {fetching ? "Çekiliyor..." : "Gardrops'tan Çek"}
+          </button>
+        </div>
       </div>
 
-      <div
-        className={`rounded-2xl border-2 border-dashed p-5 text-center transition ${
-          aiReviewDrag ? "border-stone-800 bg-stone-100" : "border-stone-300 hover:border-stone-400"
-        }`}
-        onDragOver={(e) => { e.preventDefault(); setAiReviewDrag(true); }}
-        onDragLeave={() => setAiReviewDrag(false)}
-        onDrop={(e) => { e.preventDefault(); setAiReviewDrag(false); const f = e.dataTransfer.files?.[0]; if (f) handleAiReviews(f); }}
-        onClick={() => document.getElementById("ai-reviews-input")?.click()}
-      >
-        <input
-          type="file"
-          id="ai-reviews-input"
-          accept="image/*"
-          className="hidden"
-          capture="environment"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAiReviews(f); }}
-        />
+      <div className="rounded-2xl border-2 border-stone-300 bg-white p-5 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+          📸 AI ile Yorum Ekle
+        </h3>
+        <p className="mb-4 text-xs text-stone-400">Gardrops yorumlarının ekran görüntüsünü sürükle-bırak yap, yapay zeka otomatik okusun</p>
+        <div
+          className={`rounded-2xl border-2 border-dashed p-5 text-center transition min-h-[120px] flex items-center justify-center ${
+            aiReviewDrag ? "border-stone-800 bg-stone-100" : "border-stone-300 hover:border-stone-400"
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setAiReviewDrag(true); }}
+          onDragLeave={() => setAiReviewDrag(false)}
+          onDrop={(e) => { e.preventDefault(); setAiReviewDrag(false); const f = e.dataTransfer.files?.[0]; if (f) handleAiReviews(f); }}
+          onClick={() => document.getElementById("ai-reviews-input")?.click()}
+        >
+          <input
+            type="file"
+            id="ai-reviews-input"
+            accept="image/*"
+            className="hidden"
+            capture="environment"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAiReviews(f); }}
+          />
           {aiReviewLoading ? (
-            <span className="text-sm text-stone-500">AI yorumlar okunuyor...</span>
+            <div className="flex flex-col items-center gap-2">
+              <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-stone-400 border-t-transparent" />
+              <span className="text-sm text-stone-500">AI yorumları okuyor...</span>
+            </div>
           ) : (
-            <>
-              <svg className="mx-auto h-8 w-8 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="flex flex-col items-center gap-2 cursor-pointer">
+              <svg className="h-10 w-10 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
               </svg>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="text-sm font-medium text-stone-600">
                 Yorum ekran görüntüsünü sürükle bırak veya tıkla
               </p>
-            </>
+              <p className="text-xs text-stone-400">PNG, JPG — yapay zeka otomatik okur</p>
+            </div>
           )}
+        </div>
       </div>
 
       {editing && (
