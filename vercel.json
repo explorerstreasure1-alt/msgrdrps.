@@ -3,6 +3,14 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
+      ]
+    }
+  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30

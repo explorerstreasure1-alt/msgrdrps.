@@ -103,7 +103,7 @@ const DEFAULT_SETTINGS: Settings = {
   lastSyncTimestamp: 0,
   shops: [{ name: "msgrdrps", url: GARDROPS_DEFAULT }],
   autoWelcome:
-    "Hoş geldin 🤎\n\n• Ürünleriniz yayından sonra size özel olarak Gardrops hesabımız üzerinden ilan açılacak. Size özel ilan açabilmemiz için isminizi ve soy isminizi bizimle paylaşmayı ve aldığınız ürünlerin görsellerini bizimle paylaşmayı unutmayın!\n\n• Açılan ilan üzerinden satın alma işlemi yapabilirsiniz.\n\n• Gardrops: " +
+    "Hoş geldin!\n\n• Ürünleriniz yayından sonra size özel olarak Gardrops hesabımız üzerinden ilan açılacak. Size özel ilan açabilmemiz için isminizi ve soy isminizi bizimle paylaşmayı ve aldığınız ürünlerin görsellerini bizimle paylaşmayı unutmayın!\n\n• Açılan ilan üzerinden satın alma işlemi yapabilirsiniz.\n\n• Gardrops: " +
     GARDROPS_DEFAULT +
     "\n\n• İade kabul etmiyoruz ✕",
   adminPhone: "+905337831636",
@@ -258,7 +258,7 @@ const DEFAULT_REVIEWS: Review[] = [
     id: "r1",
     author: "elif_k",
     rating: 5,
-    text: "Ürün birebir aynısı geldi, kumaş kalitesi harika. Çok teşekkürler! 🤎",
+    text: "Ürün birebir aynısı geldi, kumaş kalitesi harika. Çok teşekkürler!",
     date: "2 hafta önce",
     image: "https://picsum.photos/seed/pembe-ceket/200/160",
   },

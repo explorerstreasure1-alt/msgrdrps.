@@ -1538,7 +1538,7 @@ function MessagesTab() {
                   {active.blocked ? "Engeli Kaldır" : "Engelle"}
                 </button>
                 <button
-                  onClick={() => notifyUser(active.id, "MSgrdrps", "Size yeni bir mesajınız var 🤎", "/")}
+                  onClick={() => notifyUser(active.id, "MSgrdrps", "Size yeni bir mesajiniz var", "/")}
                   className="rounded-full border border-stone-300 px-3 py-1 text-[11px] font-medium text-stone-600 hover:bg-stone-100 transition"
                   title="Müşteriye bildirim gönder"
                 >

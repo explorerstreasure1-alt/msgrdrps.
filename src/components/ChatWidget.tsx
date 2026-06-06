@@ -105,7 +105,7 @@ export default function ChatWidget() {
           {!nameSet ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
               <p className="text-sm text-stone-600">
-                Sohbete başlamak için adınızı yazın 🤎
+                Sohbete başlamak için adınızı yazın
               </p>
               <input
                 value={name}
